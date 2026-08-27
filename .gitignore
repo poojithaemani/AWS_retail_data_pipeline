@@ -1,0 +1,54 @@
+# --- Terraform ---
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!example.tfvars
+.terraform.lock.hcl.bak
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Generated data (regenerated from a fixed seed; never committed) ---
+data/
+*.parquet
+*.csv.gz
+
+# --- Local / secrets ---
+.env
+*.pem
+credentials
+config/local.env
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Agent context (local only) ---
+# Working notes for the Claude Code agent so it can load project context
+# without re-reading the whole repository. Not part of the deliverable:
+# README.md is the human-facing documentation and stays tracked.
+CLAUDE.md
+READ.md
+
+# --- Source brief (local only) ---
+docs/DE-Training-Plan.pdf

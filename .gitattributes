@@ -1,0 +1,20 @@
+# Normalise to LF in the repository.
+* text=auto eol=lf
+
+# Shell scripts MUST stay LF. Git for Windows with core.autocrlf=true would
+# otherwise check them out with CRLF, and bash fails on the carriage return
+# with a baffling "\r: command not found".
+*.sh      text eol=lf
+*.py      text eol=lf
+*.tf      text eol=lf
+*.hcl     text eol=lf
+*.json    text eol=lf
+*.md      text eol=lf
+*.yaml    text eol=lf
+*.yml     text eol=lf
+*.env     text eol=lf
+*.sql     text eol=lf
+
+# Binary assets
+*.png     binary
+*.parquet binary
