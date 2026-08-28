@@ -1,0 +1,55 @@
+{
+  "_description": "Retail e-commerce pipeline: customers, products and orders land daily in raw, are cleaned and joined into curated sales facts, and are served to Athena and Redshift. Table names are fixed by the training brief (p.7). The database that holds them is config/project.env:GLUE_DATABASE.",
+  "layers": {
+    "raw": "raw",
+    "processed": "processed",
+    "curated": "curated",
+    "quarantine": "quarantine"
+  },
+  "datasets": {
+    "customers": {
+      "raw_prefix": "raw/customers",
+      "primary_key": [
+        "customer_id"
+      ],
+      "partition_by": [],
+      "catalog_table": "customers_raw"
+    },
+    "products": {
+      "raw_prefix": "raw/products",
+      "primary_key": [
+        "product_id"
+      ],
+      "partition_by": [],
+      "catalog_table": "products_raw"
+    },
+    "orders": {
+      "raw_prefix": "raw/orders",
+      "primary_key": [
+        "order_id"
+      ],
+      "partition_by": [
+        "year",
+        "month",
+        "day"
+      ],
+      "catalog_table": "orders_raw"
+    }
+  },
+  "curated": {
+    "sales": {
+      "prefix": "curated/sales",
+      "format": "parquet",
+      "compression": "snappy",
+      "partition_by": [
+        "year",
+        "month",
+        "day"
+      ]
+    }
+  },
+  "quality": {
+    "on_failure": "quarantine",
+    "quarantine_prefix": "quarantine/sales"
+  }
+}

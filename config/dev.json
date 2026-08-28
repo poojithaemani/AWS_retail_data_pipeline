@@ -1,0 +1,11 @@
+{
+  "_comment": "Environment-specific Glue job runtime settings. Identity (region, project prefix, domain tag, catalog name) lives in config/project.env; the data contract lives in config/pipeline.json; anything Terraform creates is owned by Terraform. Do not restate those values here.",
+  "environment": "dev",
+  "glue": {
+    "worker_type": "G.1X",
+    "number_of_workers": 2,
+    "max_retries": 0,
+    "timeout_minutes": 30,
+    "job_bookmarks": "job-bookmark-enable"
+  }
+}
