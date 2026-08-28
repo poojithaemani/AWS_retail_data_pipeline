@@ -86,7 +86,53 @@ resource "aws_s3_bucket_lifecycle_configuration" "lake" {
 }
 
 # Force TLS. Cheap control, and the first thing a security review asks for.
+locals {
+  # Break-glass principals permitted to delete under raw/. The account root is
+  # always included so a misconfiguration here can never lock the account out
+  # of its own bucket; the bootstrapping identity is included so `de.sh nuke`
+  # and controlled cleanup still work.
+  raw_maintenance_principals = distinct(concat(
+    [
+      "arn:aws:iam::${local.account_id}:root",
+      data.aws_caller_identity.current.arn,
+    ],
+    var.raw_maintenance_principal_arns,
+  ))
+}
+
 data "aws_iam_policy_document" "lake" {
+  # Immutability enforced at the resource, not just at the principal.
+  #
+  # The Glue role already has no delete verb for raw/ (see iam.tf). This
+  # statement covers everything that policy does not describe: a future role, a
+  # console session, an SDK call from anywhere. Deny beats Allow, so it holds
+  # regardless of what an identity policy grants.
+  #
+  # Scoped to DeleteObject rather than s3:* deliberately - raw must still be
+  # readable, listable, and writable for new partitions arriving each day.
+  statement {
+    sid    = "DenyRawObjectDeletion"
+    effect = "Deny"
+
+    actions = [
+      "s3:DeleteObject",
+      "s3:DeleteObjectVersion",
+    ]
+
+    resources = ["${aws_s3_bucket.lake.arn}/raw/*"]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "ArnNotLike"
+      variable = "aws:PrincipalArn"
+      values   = local.raw_maintenance_principals
+    }
+  }
+
   statement {
     sid     = "DenyInsecureTransport"
     effect  = "Deny"

@@ -46,8 +46,26 @@ data "aws_iam_policy_document" "lake_access" {
     resources = [aws_s3_bucket.lake.arn]
   }
 
+  # Raw is append-only, so the ETL role can read it and nothing more. This is
+  # the first half of the immutability guarantee: the principal that runs every
+  # job simply has no delete verb for this prefix. The bucket policy in lake.tf
+  # is the second half, covering principals this policy does not describe.
   statement {
-    sid    = "ReadWriteLakeObjects"
+    sid       = "ReadRawImmutable"
+    effect    = "Allow"
+    actions   = ["s3:GetObject", "s3:GetObjectVersion"]
+    resources = ["${aws_s3_bucket.lake.arn}/raw/*"]
+  }
+
+  # Everything downstream of raw is derived and therefore rewritable: a re-run
+  # must be able to replace the partition it previously produced.
+  #
+  # temp/ and scripts/ are included because Glue requires them, not
+  # speculatively: a Glue job takes a --TempDir it writes shuffle data to, and
+  # its script is fetched from S3 at start-up. Both arrive in Phase 3, and
+  # adding them now avoids a second change to a layer meant to stay stable.
+  statement {
+    sid    = "ReadWriteDerivedLayers"
     effect = "Allow"
 
     actions = [
@@ -58,7 +76,20 @@ data "aws_iam_policy_document" "lake_access" {
       "s3:ListMultipartUploadParts",
     ]
 
-    resources = ["${aws_s3_bucket.lake.arn}/*"]
+    resources = [
+      "${aws_s3_bucket.lake.arn}/processed/*",
+      "${aws_s3_bucket.lake.arn}/curated/*",
+      "${aws_s3_bucket.lake.arn}/quarantine/*",
+      "${aws_s3_bucket.lake.arn}/athena-results/*",
+      "${aws_s3_bucket.lake.arn}/temp/*",
+    ]
+  }
+
+  statement {
+    sid       = "ReadJobScripts"
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.lake.arn}/scripts/*"]
   }
 
   statement {

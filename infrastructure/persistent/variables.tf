@@ -71,3 +71,9 @@ variable "enable_cost_allocation_tag" {
   type        = bool
   default     = false
 }
+
+variable "raw_maintenance_principal_arns" {
+  description = "Extra principals allowed to delete under raw/. Root and the bootstrapping identity are always included."
+  type        = list(string)
+  default     = []
+}
