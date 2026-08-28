@@ -245,6 +245,20 @@ def write_summary(target: Path, phase: str, snapshot: dict[str, Any], note: str)
             )
         lines.append("")
 
+    # Collector status, stated rather than left to be inferred. An "error" here
+    # is often the expected result -- a workgroup that is "not found" after a
+    # teardown is exactly what a teardown is supposed to produce. Without this
+    # section a reader sees a stack of error strings and assumes the capture
+    # broke, when it is in fact the evidence.
+    lines += ["## Collectors", "", "| collector | result |", "| --- | --- |"]
+    for name, payload in snapshot.items():
+        if isinstance(payload, dict) and "error" in payload:
+            detail = str(payload["error"]).split(":")[-1].strip()
+            lines.append(f"| `{name}` | not reachable &mdash; {detail} |")
+        else:
+            lines.append(f"| `{name}` | captured |")
+    lines.append("")
+
     lines += ["## Files", ""]
     for path in sorted(target.glob("*.json")):
         lines.append(f"- `{path.name}`")

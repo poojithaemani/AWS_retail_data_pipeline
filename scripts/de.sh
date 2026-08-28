@@ -8,7 +8,7 @@
 #   ./scripts/de.sh load             upload the dataset into the raw layer
 #   ./scripts/de.sh evidence PHASE   capture proof of execution
 #   ./scripts/de.sh down             destroy the ephemeral training layer
-#   ./scripts/de.sh verify           assert zero resources + report spend
+#   ./scripts/de.sh verify [PHASE]   assert zero resources + report spend
 #   ./scripts/de.sh nuke             destroy EVERYTHING, persistent included
 #   ./scripts/de.sh status           what exists right now
 #   ./scripts/de.sh plan [PHASE]     terraform plan for the training layer
@@ -164,7 +164,13 @@ cmd_down() {
 cmd_gen()      { $(python_bin) "${REPO_ROOT}/src/generate/generate_retail_data.py" "$@"; }
 cmd_load()     { "${REPO_ROOT}/scripts/load_raw.sh" "$@"; }
 cmd_evidence() { $(python_bin) "${REPO_ROOT}/scripts/capture_evidence.py" "$@"; }
-cmd_verify()   { "${REPO_ROOT}/scripts/verify_teardown.sh" "$@"; }
+# Optional phase argument is recorded in docs/cost-log.md, so a row can be
+# traced back to the session that produced it. Without it the row reads "n/a",
+# which is honest but not much use later.
+cmd_verify() {
+  if [ -n "${1:-}" ]; then export TF_VAR_phase="$1"; shift; fi
+  "${REPO_ROOT}/scripts/verify_teardown.sh" "$@"
+}
 
 cmd_status() {
   require_tools

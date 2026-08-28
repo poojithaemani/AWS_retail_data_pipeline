@@ -1,0 +1,244 @@
+# Troubleshooting log
+
+Real problems only. Every entry here is something that actually happened in
+this project, with the diagnosis path that led to the fix — not a list of
+things that could theoretically go wrong.
+
+That constraint matters for the screening discussion: §7 of the brief asks
+*"what happens when a component fails?"*, and an answer built from incidents
+you actually debugged sounds different from one assembled out of documentation.
+
+## How to add an entry
+
+Use the template below. The **Diagnosis** section is the valuable part — the
+fix is usually one line, but how you found it is the transferable skill.
+
+```markdown
+### <short title>
+
+| | |
+| --- | --- |
+| Phase | NN |
+| Component | Glue / Athena / Terraform / … |
+| Deliberate? | yes (exercise) / no (real) |
+
+**Symptom** — what was observed, verbatim: the error text, exit code, or wrong output.
+
+**Diagnosis** — what was checked, in order, and what each step ruled in or out.
+
+**Cause** — the actual mechanism, not the surface error.
+
+**Fix** — what changed.
+
+**Prevention** — the test, guard or convention added so it cannot recur silently.
+```
+
+---
+
+## Phase 0 — foundation
+
+### Persistent layer apply failed 22 resources in: comma in an IAM tag value
+
+| | |
+| --- | --- |
+| Phase | 0 |
+| Component | Terraform / IAM |
+| Deliberate? | **no** — a real defect |
+
+**Symptom**
+
+`terraform apply` created 22 of 25 resources, then failed:
+
+```
+Error: creating IAM Role (de-training-glue-role): api error ValidationError:
+1 validation error detected: Value at 'tags.2.member.value' failed to satisfy
+constraint: Member must satisfy regular expression pattern:
+[\p{L}\p{Z}\p{N}_.:/=+\-@]*
+```
+
+`aws_iam_role.glue` failed; its two attachments (`glue_service`, `glue_lake`)
+were never attempted. The other 22 resources were created and recorded in state.
+
+**Diagnosis**
+
+1. The message names the constraint but not the offending value. Read the
+   pattern first: it permits letters, whitespace, digits and `_ . : / = + - @`.
+   **A comma is absent from that set.**
+2. Extracted every `tags = { ... }` value across `infrastructure/**/*.tf` and
+   tested each against the pattern. Exactly one failed:
+
+   ```
+   iam.tf  Purpose = 'Retail order ETL: crawl, clean, deduplicate, join, curate'
+                     offending characters: [',']
+   ```
+
+3. Checked why it surfaced so late, and only here. The Redshift role carries a
+   `Purpose` tag too — *"Load curated retail sales into the warehouse star
+   schema"* — with no commas, so it applied cleanly. The S3 bucket and KMS key
+   also carry tags: **S3 and KMS accept commas in tag values; IAM does not.**
+   Terraform creates resources in dependency order, so the strictest validator
+   in the graph was among the last things reached.
+
+**Cause**
+
+The `Purpose` tags were added when descriptive retail-domain labels were
+introduced (`decisions.md` D14). Commas read naturally in prose, and nothing
+locally rejected them — `terraform validate` checks syntax and types, not
+service-side value constraints. The failure could only appear at apply.
+
+**Fix**
+
+Slashes instead of commas — `/` is in the permitted set:
+
+```hcl
+Purpose = "Retail order ETL: crawl / clean / deduplicate / join / curate"
+```
+
+**Prevention**
+
+`tests/test_repo_hygiene.py::test_iam_tag_values_are_valid` parses every tag
+block in the Terraform and asserts each value matches IAM's pattern.
+Interpolations such as `${var.project}` are substituted with a safe token
+before checking, since they resolve to names and ids.
+
+Verified by reintroducing the comma: the test fails. Restored: it passes.
+
+**What this cost, and what it did not**
+
+The apply was partial, not corrupt. Terraform recorded exactly what succeeded,
+so the recovery is a re-plan showing `3 to add, 0 to change, 0 to destroy` —
+no manual cleanup, no orphaned resources, no drift. That is the argument for
+`plan → apply` over console clicking, demonstrated rather than asserted.
+
+The general lesson worth carrying: **`terraform validate` does not validate
+against AWS.** It parses configuration. Service-side constraints — tag value
+patterns, name length limits, character sets — are only enforced at apply, and
+they differ per service.
+
+Remaining candidates for this phase, to be recorded only if they occur:
+
+- Cost allocation tag activation rejected because AWS has not yet observed the
+  `Project` tag key on any resource — needs a second apply.
+- Terraform state lock left behind by an interrupted run.
+
+---
+
+### AWS CLI rejects a log group name under Git Bash
+
+| | |
+| --- | --- |
+| Phase | 0 |
+| Component | AWS CLI / Git Bash |
+| Deliberate? | no |
+
+**Symptom**
+
+```
+aws logs describe-log-groups --log-group-name-prefix '/aws-glue/jobs'
+
+InvalidParameterException: Value at 'logGroupNamePrefix' failed to satisfy
+constraint: Member must satisfy regular expression pattern: [\.\-_/#A-Za-z0-9]+
+```
+
+The pattern in the error *does* permit `/`, which is the clue that the value
+reaching AWS is not the value that was typed.
+
+**Diagnosis**
+
+Git Bash on Windows runs under MSYS, which rewrites arguments that look like
+Unix absolute paths into Windows paths before the process sees them. The CLI
+received something like `D:/Git/aws-glue/jobs`, whose colon and drive letter
+fail the pattern. Quoting does not help - the rewrite happens after the shell
+parses quotes.
+
+**Fix**
+
+```bash
+MSYS_NO_PATHCONV=1 aws logs describe-log-groups --log-group-name-prefix '/aws-glue/jobs'
+```
+
+A leading double slash (`//aws-glue/jobs`) also works.
+
+**Prevention**
+
+Checked whether the teardown verifier had the same latent bug. It does not:
+it filters client-side with JMESPath `contains(logGroupName, 'de-training')`
+and never passes a `/`-prefixed argument. Recorded in `CLAUDE.md` because it
+applies to any ad-hoc call involving log group names, IAM paths or SSM
+parameter names.
+
+---
+
+### UNRESOLVED: draw.io cannot open the Star Schema tab
+
+| | |
+| --- | --- |
+| Phase | 0 |
+| Component | draw.io |
+| Deliberate? | no |
+| Status | **open** - worked around, not fixed |
+
+**Symptom**
+
+Opening the Star Schema tab of `architecture/retail-data-platform.drawio`
+raises `d.setId is not a function`. The Architecture and Terraform Layers tabs
+in the same file open normally.
+
+**Diagnosis so far**
+
+Attribute ordering in the file draw.io itself wrote identifies which tabs it
+successfully decoded: draw.io rewrites `vertex="1" parent="1"` as
+`parent="1" vertex="1"` when it re-serialises a page. Architecture and
+Terraform Layers came back reordered; Star Schema was passed through verbatim,
+so it was never decoded.
+
+That evidence ruled out two plausible causes: `&quot;` and `&nbsp;` both appear
+in tabs that decode fine.
+
+A rebuild removed every remaining difference at once - the nested `<font>` tag,
+all HTML entities, the `endArrow=none` style used only on that tab, and the
+short generic cell ids (`st`, `ss`, `fact`, `keys`, `query`, `ec`, `ep`, `ed`)
+in favour of namespaced ones. **The error persisted.**
+
+**Why it is not fixed**
+
+Reproducing it needs draw.io, which is a browser/Electron application. It
+cannot be run from this environment, so every further attempt would be a guess
+at a JavaScript error that cannot be observed. Two guesses were already spent.
+
+**Workaround**
+
+The tab was removed rather than committed broken - a diagram that errors when a
+reviewer clicks it is worse than one that does not exist. The star schema now
+lives as a Mermaid `erDiagram` in `architecture/architecture.md`, which GitHub
+renders inline with no tooling and which carries the same content: the four
+tables, the distribution and sort keys, and the query the model exists to
+answer.
+
+**How to resolve it properly, if it matters later**
+
+Bisect with draw.io open: create a new tab with two rectangles and one edge,
+confirm it opens, then add the remaining elements back in halves until it
+breaks. That identifies the trigger in about four steps. It was not done here
+because the Mermaid version is sufficient for the purpose, and Phase 1 is
+worth more than a diagram tab.
+
+---
+
+## Phase 1 — data lake and ingestion
+
+_Not started._
+
+---
+
+## Local development
+
+Issues in the repository tooling rather than in AWS. Two are already recorded
+in `docs/decisions.md` because they changed how the project is built:
+
+- **CRLF written into shell scripts** by Python `write_text()` on Windows,
+  which would produce `\r: command not found` mid-teardown. Guarded by
+  `tests/test_repo_hygiene.py::test_no_crlf_in_tracked_text_files`.
+- **Double-encoded UTF-8** from `read_text()` defaulting to cp1252 on Windows,
+  which mangled `README.md` irreversibly. Guarded by
+  `tests/test_repo_hygiene.py::test_no_mojibake`.

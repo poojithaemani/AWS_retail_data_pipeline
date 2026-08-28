@@ -1,0 +1,5 @@
+{
+  "workgroup": "de-training-wg",
+  "queries": [],
+  "error": "An error occurred (InvalidRequestException) when calling the ListQueryExecutions operation: WorkGroup is not found."
+}

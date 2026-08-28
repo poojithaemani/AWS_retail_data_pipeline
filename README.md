@@ -50,7 +50,7 @@ infrastructure/
   persistent/      NEVER destroyed: KMS, IAM, lake bucket, budgets
   training/        destroyed every session: Glue, Athena, Redshift, SFN
 scripts/           de.sh dispatcher + teardown verification
-architecture/      mermaid source and exported PNGs
+architecture/      retail-data-platform.drawio + architecture-diagram.png
 docs/              capstone, decisions, reference repos, learnings,
                    cost log, evidence packs
 ```
@@ -97,7 +97,7 @@ Full reasoning, with alternatives and trade-offs, in
 ./scripts/de.sh evidence 03      # 2. capture proof to docs/evidence/phase-03/
 git commit -am "phase 3: ..."    # 3. commit
 ./scripts/de.sh down             # 4. destroy the ephemeral layer
-./scripts/de.sh verify           # 5. prove nothing survived
+./scripts/de.sh verify 03        # 5. prove nothing survived
 ```
 
 Step 5 exits non-zero if anything billable is still standing. A session is not
