@@ -1,0 +1,32 @@
+{
+  "daily": {
+    "files": 30,
+    "expected_files": 30,
+    "bytes": 9059268,
+    "megabytes": 9.059,
+    "avg_file_kb": 294.9
+  },
+  "hourly": {
+    "files": 720,
+    "expected_files": 720,
+    "bytes": 13441322,
+    "megabytes": 13.441,
+    "avg_file_kb": 18.23
+  },
+  "one_file": {
+    "files": 1,
+    "expected_files": 1,
+    "bytes": 374522,
+    "megabytes": 0.375,
+    "avg_file_kb": 365.74
+  },
+  "many_files": {
+    "files": 201,
+    "expected_files": 201,
+    "bytes": 1352606,
+    "megabytes": 1.353,
+    "avg_file_kb": 6.57
+  },
+  "target_day_rows": 20840,
+  "total_rows": 500000
+}

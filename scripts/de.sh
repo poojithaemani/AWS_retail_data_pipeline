@@ -7,7 +7,8 @@
 #   ./scripts/de.sh gen              generate the synthetic retail dataset
 #   ./scripts/de.sh load             upload the dataset into the raw layer
 #   ./scripts/de.sh evidence PHASE   capture proof of execution
-#   ./scripts/de.sh benchmark        Phase 1 format / partitioning comparison
+#   ./scripts/de.sh benchmark        Phase 1 format comparison
+#   ./scripts/de.sh partexp          Phase 1 over-partitioning / small files
 #   ./scripts/de.sh down             destroy the ephemeral training layer
 #   ./scripts/de.sh verify [PHASE]   assert zero resources + report spend
 #   ./scripts/de.sh nuke             destroy EVERYTHING, persistent included
@@ -166,6 +167,7 @@ cmd_gen()      { $(python_bin) "${REPO_ROOT}/src/generate/generate_retail_data.p
 cmd_load()     { "${REPO_ROOT}/scripts/load_raw.sh" "$@"; }
 cmd_evidence()  { $(python_bin) "${REPO_ROOT}/scripts/capture_evidence.py" "$@"; }
 cmd_benchmark() { $(python_bin) "${REPO_ROOT}/scripts/benchmark_formats.py" "$@"; }
+cmd_partexp()   { $(python_bin) "${REPO_ROOT}/scripts/partition_experiments.py" "$@"; }
 # Optional phase argument is recorded in docs/cost-log.md, so a row can be
 # traced back to the session that produced it. Without it the row reads "n/a",
 # which is honest but not much use later.
@@ -264,6 +266,7 @@ main() {
     load)      cmd_load      "$@" ;;
     evidence)  cmd_evidence  "$@" ;;
     benchmark) cmd_benchmark "$@" ;;
+    partexp)   cmd_partexp   "$@" ;;
     status)    cmd_status    "$@" ;;
     fmt)       cmd_fmt       "$@" ;;
     help|-h|--help) cmd_help ;;

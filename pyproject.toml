@@ -21,3 +21,21 @@ ignore = [
 testpaths = ["tests"]
 addopts = "-q"
 filterwarnings = ["error::DeprecationWarning"]
+
+[tool.pyright]
+# src/ is not a Python package yet - there is no __init__.py anywhere - so
+# three modules reach their imports through sys.path.insert at runtime:
+#
+#   scripts/partition_experiments.py   imports generate_retail_data
+#   src/generate/generate_retail_data.py  imports vocab
+#   tests/test_generate.py             imports the generator
+#
+# Those imports work. No static analyser follows a runtime sys.path change,
+# though, so the editor reports them as unresolved. These search paths tell it
+# where to look, which removes a warning that was never a defect.
+#
+# This is a stopgap. The real fix is D17 in docs/decisions.md: collapse src/
+# into an importable package so nothing needs to touch sys.path. That is due
+# before Phase 3, when src/transform/ starts importing src/common/ and Glue
+# needs one obvious thing to zip for --extra-py-files.
+extraPaths = ["src", "src/generate", "scripts"]

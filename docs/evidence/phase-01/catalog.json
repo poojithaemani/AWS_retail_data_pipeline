@@ -9,7 +9,7 @@
     {
       "name": "training_db",
       "location": "s3://de-training-749185461065/",
-      "table_count": 4,
+      "table_count": 8,
       "tables": [
         {
           "name": "bench_orders_csv",
@@ -83,6 +83,75 @@
             "year": "string",
             "month": "string",
             "day": "string"
+          },
+          "partition_keys": []
+        },
+        {
+          "name": "experiments_orders_daily",
+          "location": "s3://de-training-749185461065/experiments/daily",
+          "input_format": "MapredParquetInputFormat",
+          "serde": "ParquetHiveSerDe",
+          "columns": {
+            "order_id": "string",
+            "customer_id": "string",
+            "product_id": "string",
+            "quantity": "int",
+            "order_date": "string",
+            "status": "string"
+          },
+          "partition_keys": [
+            "year",
+            "month",
+            "day"
+          ]
+        },
+        {
+          "name": "experiments_orders_hourly",
+          "location": "s3://de-training-749185461065/experiments/hourly",
+          "input_format": "MapredParquetInputFormat",
+          "serde": "ParquetHiveSerDe",
+          "columns": {
+            "order_id": "string",
+            "customer_id": "string",
+            "product_id": "string",
+            "quantity": "int",
+            "order_date": "string",
+            "status": "string"
+          },
+          "partition_keys": [
+            "year",
+            "month",
+            "day",
+            "hour"
+          ]
+        },
+        {
+          "name": "experiments_orders_many_files",
+          "location": "s3://de-training-749185461065/experiments/many_files",
+          "input_format": "MapredParquetInputFormat",
+          "serde": "ParquetHiveSerDe",
+          "columns": {
+            "order_id": "string",
+            "customer_id": "string",
+            "product_id": "string",
+            "quantity": "int",
+            "order_date": "string",
+            "status": "string"
+          },
+          "partition_keys": []
+        },
+        {
+          "name": "experiments_orders_one_file",
+          "location": "s3://de-training-749185461065/experiments/one_file",
+          "input_format": "MapredParquetInputFormat",
+          "serde": "ParquetHiveSerDe",
+          "columns": {
+            "order_id": "string",
+            "customer_id": "string",
+            "product_id": "string",
+            "quantity": "int",
+            "order_date": "string",
+            "status": "string"
           },
           "partition_keys": []
         }

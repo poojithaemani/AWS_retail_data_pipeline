@@ -1,7 +1,7 @@
 # Phase 1 - format comparison
 
 Database `training_db`, workgroup `de-training-wg`, region `us-east-2`.
-Captured 2026-08-28T23:41:29Z.
+Captured 2026-08-31T00:51:31Z.
 
 All four tables describe the **same rows**. Only the encoding and the
 partition layout differ.
@@ -10,46 +10,46 @@ partition layout differ.
 
 | format | objects | MB | vs CSV |
 | --- | ---: | ---: | ---: |
-| csv | 30 | 0.586 | 100.0% |
-| json | 30 | 1.415 | 241.3% |
-| parquet_partitioned | 30 | 0.356 | 60.8% |
-| parquet_flat | 1 | 0.220 | 37.5% |
+| csv | 42 | 0.807 | 100.0% |
+| json | 42 | 1.947 | 241.3% |
+| parquet_partitioned | 42 | 0.494 | 61.2% |
+| parquet_flat | 1 | 0.218 | 27.1% |
 
 ## Query: `pruned_single_day`
 
 | format | bytes scanned (MB) | vs CSV | planning ms | engine ms |
 | --- | ---: | ---: | ---: | ---: |
-| csv | 0.026 | 100.00% | 110 | 422 |
-| json | 0.063 | 241.45% | None | 778 |
-| parquet_partitioned | 0.001 | 2.25% | 110 | 467 |
-| parquet_flat | 0.016 | 60.87% | 80 | 410 |
+| csv | 0.015 | 100.00% | 122 | 502 |
+| json | 0.035 | 241.11% | 159 | 514 |
+| parquet_partitioned | 0.000 | 3.08% | 117 | 400 |
+| parquet_flat | 0.015 | 99.47% | 88 | 432 |
 
 ## Query: `full_scan_no_filter`
 
 | format | bytes scanned (MB) | vs CSV | planning ms | engine ms |
 | --- | ---: | ---: | ---: | ---: |
-| csv | 0.586 | 100.00% | 312 | 703 |
-| json | 1.415 | 241.26% | 362 | 742 |
-| parquet_partitioned | 0.015 | 2.60% | 388 | 818 |
-| parquet_flat | 0.008 | 1.33% | 61 | 359 |
+| csv | 0.807 | 100.00% | 382 | 873 |
+| json | 1.947 | 241.25% | 261 | 667 |
+| parquet_partitioned | 0.021 | 2.63% | 291 | 678 |
+| parquet_flat | 0.008 | 0.96% | 58 | 386 |
 
 ## Query: `single_column_aggregate`
 
 | format | bytes scanned (MB) | vs CSV | planning ms | engine ms |
 | --- | ---: | ---: | ---: | ---: |
-| csv | 0.586 | 100.00% | 268 | 579 |
-| json | 1.415 | 241.26% | 271 | 605 |
-| parquet_partitioned | 0.008 | 1.28% | 234 | 540 |
-| parquet_flat | 0.004 | 0.66% | 64 | 485 |
+| csv | 0.807 | 100.00% | 454 | 936 |
+| json | 1.947 | 241.25% | 423 | 1081 |
+| parquet_partitioned | 0.010 | 1.30% | 375 | 1353 |
+| parquet_flat | 0.004 | 0.48% | 57 | 338 |
 
 ## The three effects, isolated
 
 | effect | comparison | result |
 | --- | --- | ---: |
-| columnar storage alone | flat Parquet vs CSV, both full scans | **1.33%** |
-| partition pruning alone | partitioned vs flat Parquet, both filtered | **3.70%** |
-| pruning on a row format | CSV filtered vs CSV full scan | **4.46%** |
-| both together | partitioned Parquet vs CSV, both filtered | **2.25%** |
+| columnar storage alone | flat Parquet vs CSV, both full scans | **0.96%** |
+| partition pruning alone | partitioned vs flat Parquet, both filtered | **3.10%** |
+| pruning on a row format | CSV filtered vs CSV full scan | **1.81%** |
+| both together | partitioned Parquet vs CSV, both filtered | **3.08%** |
 
 The third row is the one usually left out. CSV prunes too - pruning is a
 property of the partition layout, not of Parquet. Quoting only the last
@@ -58,7 +58,7 @@ produced.
 
 ### Filtering the flat Parquet table made it scan MORE
 
-`pruned_single_day` scanned **15,906 bytes**; `full_scan_no_filter` scanned **7,778**. The filtered query read **2.0x more data**.
+`pruned_single_day` scanned **14,527 bytes**; `full_scan_no_filter` scanned **7,778**. The filtered query read **1.9x more data**.
 
 This is not an error, and it is the clearest demonstration of columnar
 behaviour in the whole comparison. In the flat table `year`, `month`

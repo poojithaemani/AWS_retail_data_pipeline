@@ -1,0 +1,213 @@
+{
+  "captured_at_utc": "2026-08-31T01:02:09Z",
+  "corpus": {
+    "daily": {
+      "files": 30,
+      "expected_files": 30,
+      "bytes": 9059268,
+      "megabytes": 9.059,
+      "avg_file_kb": 294.9
+    },
+    "hourly": {
+      "files": 720,
+      "expected_files": 720,
+      "bytes": 13441322,
+      "megabytes": 13.441,
+      "avg_file_kb": 18.23
+    },
+    "one_file": {
+      "files": 1,
+      "expected_files": 1,
+      "bytes": 374522,
+      "megabytes": 0.375,
+      "avg_file_kb": 365.74
+    },
+    "many_files": {
+      "files": 201,
+      "expected_files": 201,
+      "bytes": 1352606,
+      "megabytes": 1.353,
+      "avg_file_kb": 6.57
+    },
+    "target_day_rows": 20840,
+    "total_rows": 500000
+  },
+  "results": {
+    "partitioning": {
+      "daily": {
+        "one_day": {
+          "state": "SUCCEEDED",
+          "bytes_scanned": 16051,
+          "planning_ms": 122,
+          "engine_ms": 463,
+          "total_ms": 623,
+          "planning_ms_all": [
+            120,
+            214,
+            122
+          ],
+          "total_ms_all": [
+            623,
+            1351,
+            588
+          ],
+          "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM experiments_orders_daily WHERE year = '2026' AND month = '08' AND day = '19' GROUP BY status ORDER BY status",
+          "runs": 3
+        },
+        "full_scan": {
+          "state": "SUCCEEDED",
+          "bytes_scanned": 384336,
+          "planning_ms": 275,
+          "engine_ms": 754,
+          "total_ms": 884,
+          "planning_ms_all": [
+            316,
+            266,
+            275
+          ],
+          "total_ms_all": [
+            912,
+            884,
+            883
+          ],
+          "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM experiments_orders_daily GROUP BY status ORDER BY status",
+          "runs": 3
+        },
+        "corpus": {
+          "files": 30,
+          "expected_files": 30,
+          "bytes": 9059268,
+          "megabytes": 9.059,
+          "avg_file_kb": 294.9
+        }
+      },
+      "hourly": {
+        "one_day": {
+          "state": "SUCCEEDED",
+          "bytes_scanned": 21902,
+          "planning_ms": 359,
+          "engine_ms": 837,
+          "total_ms": 957,
+          "planning_ms_all": [
+            359,
+            305,
+            360
+          ],
+          "total_ms_all": [
+            835,
+            957,
+            1438
+          ],
+          "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM experiments_orders_hourly WHERE year = '2026' AND month = '08' AND day = '19' GROUP BY status ORDER BY status",
+          "runs": 3
+        },
+        "full_scan": {
+          "state": "SUCCEEDED",
+          "bytes_scanned": 563561,
+          "planning_ms": 922,
+          "engine_ms": 1561,
+          "total_ms": 1683,
+          "planning_ms_all": [
+            922,
+            652,
+            933
+          ],
+          "total_ms_all": [
+            1683,
+            1337,
+            1803
+          ],
+          "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM experiments_orders_hourly GROUP BY status ORDER BY status",
+          "runs": 3
+        },
+        "corpus": {
+          "files": 720,
+          "expected_files": 720,
+          "bytes": 13441322,
+          "megabytes": 13.441,
+          "avg_file_kb": 18.23
+        }
+      }
+    },
+    "small_files": {
+      "one_file": {
+        "aggregate": {
+          "state": "SUCCEEDED",
+          "bytes_scanned": 16051,
+          "planning_ms": 67,
+          "engine_ms": 436,
+          "total_ms": 559,
+          "planning_ms_all": [
+            88,
+            56,
+            67
+          ],
+          "total_ms_all": [
+            1138,
+            530,
+            559
+          ],
+          "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM experiments_orders_one_file GROUP BY status ORDER BY status",
+          "runs": 3
+        },
+        "corpus": {
+          "files": 1,
+          "expected_files": 1,
+          "bytes": 374522,
+          "megabytes": 0.375,
+          "avg_file_kb": 365.74
+        }
+      },
+      "many_files": {
+        "aggregate": {
+          "state": "SUCCEEDED",
+          "bytes_scanned": 65845,
+          "planning_ms": 84,
+          "engine_ms": 573,
+          "total_ms": 701,
+          "planning_ms_all": [
+            84,
+            126,
+            71
+          ],
+          "total_ms_all": [
+            701,
+            883,
+            668
+          ],
+          "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM experiments_orders_many_files GROUP BY status ORDER BY status",
+          "runs": 3
+        },
+        "corpus": {
+          "files": 201,
+          "expected_files": 201,
+          "bytes": 1352606,
+          "megabytes": 1.353,
+          "avg_file_kb": 6.57
+        }
+      }
+    },
+    "repair": {
+      "daily": {
+        "state": "SUCCEEDED",
+        "reason": null,
+        "bytes_scanned": 0,
+        "planning_ms": null,
+        "engine_ms": 4145,
+        "total_ms": 4296,
+        "sql": "MSCK REPAIR TABLE experiments_orders_daily",
+        "wall_seconds": 4.53
+      },
+      "hourly": {
+        "state": "SUCCEEDED",
+        "reason": null,
+        "bytes_scanned": 0,
+        "planning_ms": null,
+        "engine_ms": 18039,
+        "total_ms": 18277,
+        "sql": "MSCK REPAIR TABLE experiments_orders_hourly",
+        "wall_seconds": 18.97
+      }
+    }
+  }
+}

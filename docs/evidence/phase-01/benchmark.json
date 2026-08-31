@@ -1,153 +1,275 @@
 {
-  "captured_at_utc": "2026-08-28T23:41:29Z",
+  "captured_at_utc": "2026-08-31T00:51:31Z",
   "database": "training_db",
   "workgroup": "de-training-wg",
   "bucket": "de-training-749185461065",
-  "ddl": [],
+  "ddl": [
+    {
+      "query_execution_id": "4ab3ffb5-8935-4d3a-8559-5357d76800bb",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 172,
+      "planning_ms": null,
+      "total_ms": 327,
+      "sql": "DROP TABLE IF EXISTS bench_orders_csv",
+      "file": "01_bench_orders_csv.sql"
+    },
+    {
+      "query_execution_id": "ddf4739a-4522-494e-8f2c-c36bdf306372",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 256,
+      "planning_ms": null,
+      "total_ms": 334,
+      "sql": "CREATE EXTERNAL TABLE bench_orders_csv ( order_id string, customer_id string, product_id string, quantity int, order_date string, status string ) PARTITIONED BY ( year string, month string, day string ) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ( 'field.delim' = ',' ) STORED AS TEXTFILE LOCATION 's3://de-training-749185461065/benchmark/csv/orders/' ",
+      "file": "01_bench_orders_csv.sql"
+    },
+    {
+      "query_execution_id": "a5a7ec4a-4168-4f94-948a-2d093db8ca68",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 4457,
+      "planning_ms": null,
+      "total_ms": 4642,
+      "sql": "MSCK REPAIR TABLE bench_orders_csv",
+      "file": "01_bench_orders_csv.sql"
+    },
+    {
+      "query_execution_id": "b4f2f1ca-2e92-4039-b6cf-98edd15bcff8",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 123,
+      "planning_ms": null,
+      "total_ms": 237,
+      "sql": "DROP TABLE IF EXISTS bench_orders_json",
+      "file": "02_bench_orders_json.sql"
+    },
+    {
+      "query_execution_id": "53c6173a-dc55-4081-a14c-bae57f6d1987",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 243,
+      "planning_ms": null,
+      "total_ms": 324,
+      "sql": "CREATE EXTERNAL TABLE bench_orders_json ( order_id string, customer_id string, product_id string, quantity int, order_date string, status string ) PARTITIONED BY ( year string, month string, day string ) ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe' STORED AS TEXTFILE LOCATION 's3://de-training-749185461065/benchmark/json/orders/'",
+      "file": "02_bench_orders_json.sql"
+    },
+    {
+      "query_execution_id": "1a8e2685-1ae3-400b-b9ea-829a6a1e99b5",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 2227,
+      "planning_ms": null,
+      "total_ms": 2386,
+      "sql": "MSCK REPAIR TABLE bench_orders_json",
+      "file": "02_bench_orders_json.sql"
+    },
+    {
+      "query_execution_id": "3284464a-2845-4579-bc50-87b1a4478a36",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 137,
+      "planning_ms": null,
+      "total_ms": 263,
+      "sql": "DROP TABLE IF EXISTS bench_orders_parquet",
+      "file": "03_bench_orders_parquet.sql"
+    },
+    {
+      "query_execution_id": "a429e39b-8980-48a9-9e2f-2012b20cc6ce",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 229,
+      "planning_ms": null,
+      "total_ms": 293,
+      "sql": "CREATE EXTERNAL TABLE bench_orders_parquet ( order_id string, customer_id string, product_id string, quantity int, order_date string, status string ) PARTITIONED BY ( year string, month string, day string ) STORED AS PARQUET LOCATION 's3://de-training-749185461065/benchmark/parquet/orders/' TBLPROPERTIES ( 'parquet.compression' = 'SNAPPY' )",
+      "file": "03_bench_orders_parquet.sql"
+    },
+    {
+      "query_execution_id": "f55c9ab6-97dd-4039-8198-67238418e0cf",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 4618,
+      "planning_ms": null,
+      "total_ms": 4768,
+      "sql": "MSCK REPAIR TABLE bench_orders_parquet",
+      "file": "03_bench_orders_parquet.sql"
+    },
+    {
+      "query_execution_id": "6955b68f-45e5-42f2-a497-2e3bf1cfefa6",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 137,
+      "planning_ms": null,
+      "total_ms": 288,
+      "sql": "DROP TABLE IF EXISTS bench_orders_parquet_flat",
+      "file": "04_bench_orders_parquet_flat.sql"
+    },
+    {
+      "query_execution_id": "12212b74-c1ab-489f-a670-a651b0c10730",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 236,
+      "planning_ms": null,
+      "total_ms": 324,
+      "sql": "CREATE EXTERNAL TABLE bench_orders_parquet_flat ( order_id string, customer_id string, product_id string, quantity int, order_date string, status string, year string, month string, day string ) STORED AS PARQUET LOCATION 's3://de-training-749185461065/benchmark/parquet_flat/orders/' TBLPROPERTIES ( 'parquet.compression' = 'SNAPPY' )",
+      "file": "04_bench_orders_parquet_flat.sql"
+    }
+  ],
   "on_disk": {
     "csv": {
-      "objects": 30,
-      "bytes": 586308
+      "objects": 42,
+      "bytes": 806843
     },
     "json": {
-      "objects": 30,
-      "bytes": 1414538
+      "objects": 42,
+      "bytes": 1946528
     },
     "parquet_partitioned": {
-      "objects": 30,
-      "bytes": 356188
+      "objects": 42,
+      "bytes": 493857
     },
     "parquet_flat": {
       "objects": 1,
-      "bytes": 219840
+      "bytes": 218328
     }
   },
   "queries": {
     "csv": {
       "pruned_single_day": {
-        "query_execution_id": "dbfe7c33-270a-4686-a4b9-6d0e329774e3",
+        "query_execution_id": "5f4352da-fefe-4eec-9a5a-7d54055f4a56",
         "state": "SUCCEEDED",
         "reason": null,
-        "bytes_scanned": 26129,
-        "engine_ms": 422,
-        "planning_ms": 110,
-        "total_ms": 548,
+        "bytes_scanned": 14604,
+        "engine_ms": 502,
+        "planning_ms": 122,
+        "total_ms": 631,
         "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM bench_orders_csv WHERE year = '2026' AND month = '08' AND day = '19' GROUP BY status ORDER BY status"
       },
       "full_scan_no_filter": {
-        "query_execution_id": "51ed4cc1-f09a-4fc4-904b-3fdfba1e3df2",
+        "query_execution_id": "d47a7d13-2db4-4480-8fcf-f4b8aae76816",
         "state": "SUCCEEDED",
         "reason": null,
-        "bytes_scanned": 586308,
-        "engine_ms": 703,
-        "planning_ms": 312,
-        "total_ms": 837,
+        "bytes_scanned": 806843,
+        "engine_ms": 873,
+        "planning_ms": 382,
+        "total_ms": 1007,
         "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM bench_orders_csv GROUP BY status ORDER BY status"
       },
       "single_column_aggregate": {
-        "query_execution_id": "2182f035-a846-4d00-aa42-cc366bdb5281",
+        "query_execution_id": "622b1887-6d9d-4445-8ae4-2614e857b334",
         "state": "SUCCEEDED",
         "reason": null,
-        "bytes_scanned": 586308,
-        "engine_ms": 579,
-        "planning_ms": 268,
-        "total_ms": 729,
+        "bytes_scanned": 806843,
+        "engine_ms": 936,
+        "planning_ms": 454,
+        "total_ms": 1092,
         "sql": "SELECT sum(quantity) AS units FROM bench_orders_csv"
       }
     },
     "json": {
       "pruned_single_day": {
-        "query_execution_id": "73457bb4-adce-45bd-9e4e-536bb653e1ba",
+        "query_execution_id": "9f94d3d9-000e-4f76-bd88-cbd0a2d4f35d",
         "state": "SUCCEEDED",
         "reason": null,
-        "bytes_scanned": 63088,
-        "engine_ms": 778,
-        "planning_ms": null,
-        "total_ms": 1114,
+        "bytes_scanned": 35212,
+        "engine_ms": 514,
+        "planning_ms": 159,
+        "total_ms": 654,
         "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM bench_orders_json WHERE year = '2026' AND month = '08' AND day = '19' GROUP BY status ORDER BY status"
       },
       "full_scan_no_filter": {
-        "query_execution_id": "4dac28e7-6f88-4b85-9954-7ed57a72baa5",
+        "query_execution_id": "2122b49e-c5f6-4779-9eca-76c4fb76f03b",
         "state": "SUCCEEDED",
         "reason": null,
-        "bytes_scanned": 1414538,
-        "engine_ms": 742,
-        "planning_ms": 362,
-        "total_ms": 866,
+        "bytes_scanned": 1946528,
+        "engine_ms": 667,
+        "planning_ms": 261,
+        "total_ms": 806,
         "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM bench_orders_json GROUP BY status ORDER BY status"
       },
       "single_column_aggregate": {
-        "query_execution_id": "0a57420a-d826-42be-a9dc-d636ad5659ce",
+        "query_execution_id": "4773d85b-572e-4f18-a9ff-a675cdeb299d",
         "state": "SUCCEEDED",
         "reason": null,
-        "bytes_scanned": 1414538,
-        "engine_ms": 605,
-        "planning_ms": 271,
-        "total_ms": 763,
+        "bytes_scanned": 1946528,
+        "engine_ms": 1081,
+        "planning_ms": 423,
+        "total_ms": 1437,
         "sql": "SELECT sum(quantity) AS units FROM bench_orders_json"
       }
     },
     "parquet_partitioned": {
       "pruned_single_day": {
-        "query_execution_id": "ad4f3b58-c8c2-4cf9-bca2-44f82f7da30e",
+        "query_execution_id": "5bae6609-23e3-46d7-a317-3e6ee955b481",
         "state": "SUCCEEDED",
         "reason": null,
-        "bytes_scanned": 589,
-        "engine_ms": 467,
-        "planning_ms": 110,
-        "total_ms": 627,
+        "bytes_scanned": 450,
+        "engine_ms": 400,
+        "planning_ms": 117,
+        "total_ms": 550,
         "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM bench_orders_parquet WHERE year = '2026' AND month = '08' AND day = '19' GROUP BY status ORDER BY status"
       },
       "full_scan_no_filter": {
-        "query_execution_id": "3ff79566-e509-4d74-bec3-9412088fbfce",
+        "query_execution_id": "878ae562-a72b-432e-9075-bf7b88db5853",
         "state": "SUCCEEDED",
         "reason": null,
-        "bytes_scanned": 15273,
-        "engine_ms": 818,
-        "planning_ms": 388,
-        "total_ms": 931,
+        "bytes_scanned": 21219,
+        "engine_ms": 678,
+        "planning_ms": 291,
+        "total_ms": 796,
         "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM bench_orders_parquet GROUP BY status ORDER BY status"
       },
       "single_column_aggregate": {
-        "query_execution_id": "abf147af-ce17-4e85-a02e-782650b28ff7",
+        "query_execution_id": "3c91ca44-9fba-438a-919b-cdf59ccb8dde",
         "state": "SUCCEEDED",
         "reason": null,
-        "bytes_scanned": 7528,
-        "engine_ms": 540,
-        "planning_ms": 234,
-        "total_ms": 680,
+        "bytes_scanned": 10450,
+        "engine_ms": 1353,
+        "planning_ms": 375,
+        "total_ms": 1629,
         "sql": "SELECT sum(quantity) AS units FROM bench_orders_parquet"
       }
     },
     "parquet_flat": {
       "pruned_single_day": {
-        "query_execution_id": "d7b66b8d-cc22-455b-9e51-f4a160e8096b",
+        "query_execution_id": "f2f81afa-7da7-472d-9e15-d47bfac45f85",
         "state": "SUCCEEDED",
         "reason": null,
-        "bytes_scanned": 15906,
-        "engine_ms": 410,
-        "planning_ms": 80,
-        "total_ms": 572,
+        "bytes_scanned": 14527,
+        "engine_ms": 432,
+        "planning_ms": 88,
+        "total_ms": 554,
         "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM bench_orders_parquet_flat WHERE year = '2026' AND month = '08' AND day = '19' GROUP BY status ORDER BY status"
       },
       "full_scan_no_filter": {
-        "query_execution_id": "fa0df237-4b94-47d1-ad01-4718e0501db8",
+        "query_execution_id": "98d6b07c-dc6d-4b89-83e6-670a7837f57c",
         "state": "SUCCEEDED",
         "reason": null,
         "bytes_scanned": 7778,
-        "engine_ms": 359,
-        "planning_ms": 61,
-        "total_ms": 480,
+        "engine_ms": 386,
+        "planning_ms": 58,
+        "total_ms": 545,
         "sql": "SELECT status, count(*) AS orders, sum(quantity) AS units FROM bench_orders_parquet_flat GROUP BY status ORDER BY status"
       },
       "single_column_aggregate": {
-        "query_execution_id": "31ae41b1-6016-4763-83c3-456d83d44e43",
+        "query_execution_id": "029e84eb-759e-4842-ad31-126286f49efb",
         "state": "SUCCEEDED",
         "reason": null,
         "bytes_scanned": 3897,
-        "engine_ms": 485,
-        "planning_ms": 64,
-        "total_ms": 626,
+        "engine_ms": 338,
+        "planning_ms": 57,
+        "total_ms": 465,
         "sql": "SELECT sum(quantity) AS units FROM bench_orders_parquet_flat"
       }
     }

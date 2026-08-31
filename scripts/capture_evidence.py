@@ -128,6 +128,7 @@ def collect_lake(session: boto3.Session) -> dict[str, Any]:
         "curated/",
         "quarantine/",
         "benchmark/",
+        "experiments/",
         "athena-results/",
     ):
         objects, size, partitions = 0, 0, set()
@@ -315,8 +316,13 @@ def write_summary(target: Path, phase: str, snapshot: dict[str, Any], note: str)
             lines.append(f"| `{name}` | captured |")
     lines.append("")
 
+    # Every artefact, not just the JSON. The written reports are the part a
+    # human actually reads, and listing only the machine-readable files made
+    # the index look emptier than the folder.
     lines += ["## Files", ""]
-    for path in sorted(target.glob("*.json")):
+    for path in sorted(target.iterdir()):
+        if path.name == "README.md" or path.is_dir():
+            continue
         lines.append(f"- `{path.name}`")
     lines.append("")
 

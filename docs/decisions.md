@@ -360,7 +360,11 @@ JSON config).
 
 ## D17 — A `src/retail_pipeline/` package, not the brief's flat tree
 
-**Status: agreed, not yet implemented.** The repository currently has
+**Status: agreed, not yet implemented.** Now costing something visible: three
+modules reach their imports through `sys.path.insert`, and editors report every
+one as unresolved because no static analyser follows a runtime path change.
+`[tool.pyright] extraPaths` in `pyproject.toml` silences that, but it is a
+workaround for a structural problem, not a fix. The repository currently has
 `src/generate/` plus empty `src/{extract,transform,quality,common}/`. The
 restructure happens in Phase 1, when there is code to move.
 
