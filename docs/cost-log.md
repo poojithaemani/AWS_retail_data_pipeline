@@ -8,16 +8,21 @@ usually the *previous* session's spend settling. Read the trend, not the row.
 Target: under $50 for the whole project. Idle cost after a verified teardown
 should be a few cents a month (S3 storage + KMS key).
 
+**The `3 survivor(s)` row on 2026-08-27 is kept deliberately.** `verify` ran
+while the training layer was still standing and correctly refused to report
+clean. That row is the proof the check fails when it should — a teardown
+verifier that has only ever returned "clean" has not been tested.
+
+Rows from 2026-08-22 and 2026-08-24 were removed: they predate `bootstrap`, so
+they recorded an empty account rather than a real session.
+
+> **The table must stay at the end of this file.** `verify_teardown.sh` appends
+> each new row with `>>`, so anything written below the table lands outside it
+> and breaks the rendering. That already happened once.
+
 | Date (UTC) | Phase | Month-to-date | Teardown |
 | --- | --- | ---: | --- |
 | 2026-08-27 | 00 | $-0.0000014582 | clean |
 | 2026-08-27 | 00 | $-0.0000014582 | 3 survivor(s) |
 | 2026-08-27 | 00 | $-0.0000014582 | clean |
-
-The middle row is kept deliberately. `verify` ran while the training layer was
-still standing and reported three survivors, which is the proof that the check
-actually fails when it should. A teardown verifier that has only ever returned
-"clean" has not been tested.
-
-Rows from 2026-08-22 and 2026-08-24 were removed: they predate `bootstrap`, so
-they recorded an empty account rather than a real session.
+| 2026-08-31 | 01 | $-0.0000016052 | clean |

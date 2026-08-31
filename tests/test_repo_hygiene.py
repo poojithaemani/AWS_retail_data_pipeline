@@ -216,6 +216,27 @@ def test_iam_tag_values_are_valid() -> None:
     assert not offenders, "invalid IAM tag values: " + "; ".join(offenders)
 
 
+def test_cost_log_table_is_last() -> None:
+    """`verify` appends rows with >>, so the table must end the file.
+
+    Prose written below the table means the next appended row lands outside it
+    and the table stops rendering. That happened once already: an explanatory
+    paragraph was added after the rows, and the following session's entry
+    appeared as a stray line of pipes.
+    """
+    lines = [
+        line
+        for line in (REPO_ROOT / "docs" / "cost-log.md")
+        .read_text(encoding="utf-8")
+        .splitlines()
+        if line.strip()
+    ]
+    assert lines[-1].startswith("|"), (
+        "docs/cost-log.md must end with the table; the last non-blank line is: "
+        f"{lines[-1]!r}"
+    )
+
+
 def test_terraform_is_formatted() -> None:
     result = subprocess.run(
         ["terraform", "fmt", "-check", "-recursive", str(REPO_ROOT / "infrastructure")],
