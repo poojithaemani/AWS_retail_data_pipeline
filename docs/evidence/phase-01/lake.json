@@ -1,0 +1,41 @@
+{
+  "bucket": "de-training-749185461065",
+  "layers": {
+    "raw/": {
+      "objects": 32,
+      "bytes": 661660,
+      "megabytes": 0.662,
+      "distinct_prefixes": 32
+    },
+    "processed/": {
+      "objects": 0,
+      "bytes": 0,
+      "megabytes": 0.0,
+      "distinct_prefixes": 0
+    },
+    "curated/": {
+      "objects": 0,
+      "bytes": 0,
+      "megabytes": 0.0,
+      "distinct_prefixes": 0
+    },
+    "quarantine/": {
+      "objects": 0,
+      "bytes": 0,
+      "megabytes": 0.0,
+      "distinct_prefixes": 0
+    },
+    "benchmark/": {
+      "objects": 97,
+      "bytes": 2852699,
+      "megabytes": 2.853,
+      "distinct_prefixes": 97
+    },
+    "athena-results/": {
+      "objects": 10,
+      "bytes": 989,
+      "megabytes": 0.001,
+      "distinct_prefixes": 1
+    }
+  }
+}

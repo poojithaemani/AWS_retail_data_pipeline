@@ -310,6 +310,33 @@ def main(argv: list[str] | None = None) -> int:
         total = sum(p.stat().st_size for p in paths)
         print(f"  {fmt:<8} {len(paths):>4} files  {total / 1e6:8.2f} MB")
 
+        # One unpartitioned Parquet file alongside the partitioned tree.
+        #
+        # This is the control for the Phase 1 benchmark: comparing partitioned
+        # Parquet against CSV measures columnar storage and partition pruning
+        # at the same time, and reporting that single number credits Parquet
+        # with a saving that partitioning produced. The flat copy separates
+        # them.
+        #
+        # Written here rather than by Athena CTAS because the workgroup sets
+        # enforce_workgroup_configuration, which forbids the external_location
+        # a CTAS would need. Weakening that setting to make the benchmark
+        # easier would remove the per-query scan ceiling it exists to enforce.
+        if fmt == "parquet":
+            flat = out / "parquet_flat" / "orders" / "orders.parquet"
+            flat_frame = orders.copy()
+            stamp = pd.to_datetime(flat_frame["order_date"])
+            # Partition values become ordinary columns: still filterable, but
+            # with no directories to skip, which is the point of the control.
+            flat_frame["year"] = stamp.dt.strftime("%Y")
+            flat_frame["month"] = stamp.dt.strftime("%m")
+            flat_frame["day"] = stamp.dt.strftime("%d")
+            write_frame(flat_frame, flat, "parquet")
+            print(
+                f"  {'flat':<8} {1:>4} files  {flat.stat().st_size / 1e6:8.2f} MB"
+                "  (unpartitioned control)"
+            )
+
         # Parquet embeds writer metadata, so its bytes can shift with a library
         # upgrade. Checksums are recorded for the text formats, which are the
         # ones the reproducibility check asserts on.

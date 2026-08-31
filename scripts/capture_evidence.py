@@ -119,7 +119,17 @@ def collect_lake(session: boto3.Session) -> dict[str, Any]:
     bucket = f"{PROJECT}-{account}"
 
     layers: dict[str, Any] = {}
-    for prefix in ("raw/", "processed/", "curated/", "quarantine/", "athena-results/"):
+    # benchmark/ is not a lake layer - it is the Phase 1 measurement corpus.
+    # Recorded because its size is half the finding: the same rows occupy
+    # very different space depending on encoding.
+    for prefix in (
+        "raw/",
+        "processed/",
+        "curated/",
+        "quarantine/",
+        "benchmark/",
+        "athena-results/",
+    ):
         objects, size, partitions = 0, 0, set()
         try:
             paginator = s3.get_paginator("list_objects_v2")
@@ -185,13 +195,59 @@ def collect_athena(session: boto3.Session) -> dict[str, Any]:
 
 
 
+def collect_catalog(session: boto3.Session) -> dict[str, Any]:
+    """What the Glue Data Catalog believes exists.
+
+    Added in Phase 1, when hand-written DDL first put tables in the catalog.
+    Phase 2 will extend this with crawler run history; there is nothing to
+    record about crawlers until crawlers exist.
+
+    The column types are the part worth keeping: Phase 2 deliberately breaks
+    schema inference with a `price = UNKNOWN` row, and the interesting evidence
+    is the before-and-after of a column's declared type.
+    """
+    glue = session.client("glue", region_name=REGION)
+    out: dict[str, Any] = {"databases": []}
+
+    try:
+        for database in glue.get_databases().get("DatabaseList", []):
+            tables = []
+            for table in glue.get_tables(DatabaseName=database["Name"]).get("TableList", []):
+                storage = table.get("StorageDescriptor", {})
+                tables.append(
+                    {
+                        "name": table["Name"],
+                        "location": storage.get("Location"),
+                        "input_format": (storage.get("InputFormat") or "").rsplit(".", 1)[-1],
+                        "serde": (
+                            storage.get("SerdeInfo", {}).get("SerializationLibrary") or ""
+                        ).rsplit(".", 1)[-1],
+                        "columns": {c["Name"]: c["Type"] for c in storage.get("Columns", [])},
+                        "partition_keys": [c["Name"] for c in table.get("PartitionKeys", [])],
+                    }
+                )
+            out["databases"].append(
+                {
+                    "name": database["Name"],
+                    "location": database.get("LocationUri"),
+                    "table_count": len(tables),
+                    "tables": tables,
+                }
+            )
+    except AWS_ERRORS as exc:
+        return {"error": str(exc)[:200]}
+
+    return out
+
+
 COLLECTORS: dict[str, Callable[[boto3.Session], dict[str, Any]]] = {
     "context": collect_context,
     "lake": collect_lake,
     "athena": collect_athena,
+    "catalog": collect_catalog,
 }
 
-# Deliberately not built yet: glue, data_quality, orchestration, warehouse,
+# Deliberately not built yet: data_quality, orchestration, warehouse,
 # governance, monitoring, terraform. Each is roughly thirty lines of boto3
 # following the same shape as the three above - a paginated list call, a few
 # fields kept, errors caught and recorded rather than raised. They get written
