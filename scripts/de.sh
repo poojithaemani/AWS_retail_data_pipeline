@@ -9,6 +9,9 @@
 #   ./scripts/de.sh evidence PHASE   capture proof of execution
 #   ./scripts/de.sh benchmark        Phase 1 format comparison
 #   ./scripts/de.sh partexp          Phase 1 over-partitioning / small files
+#   ./scripts/de.sh crawl            run the Glue crawler and wait
+#   ./scripts/de.sh publish          crawler names -> required table names
+#   ./scripts/de.sh breakschema      Phase 2 schema-break delivery
 #   ./scripts/de.sh down             destroy the ephemeral training layer
 #   ./scripts/de.sh verify [PHASE]   assert zero resources + report spend
 #   ./scripts/de.sh nuke             destroy EVERYTHING, persistent included
@@ -168,6 +171,9 @@ cmd_load()     { "${REPO_ROOT}/scripts/load_raw.sh" "$@"; }
 cmd_evidence()  { $(python_bin) "${REPO_ROOT}/scripts/capture_evidence.py" "$@"; }
 cmd_benchmark() { $(python_bin) "${REPO_ROOT}/scripts/benchmark_formats.py" "$@"; }
 cmd_partexp()   { $(python_bin) "${REPO_ROOT}/scripts/partition_experiments.py" "$@"; }
+cmd_breakschema() { $(python_bin) "${REPO_ROOT}/src/generate/break_schema.py" "$@"; }
+cmd_crawl()     { "${REPO_ROOT}/scripts/run_crawler.sh" "$@"; }
+cmd_publish()   { $(python_bin) "${REPO_ROOT}/scripts/publish_catalog.py" "$@"; }
 # Optional phase argument is recorded in docs/cost-log.md, so a row can be
 # traced back to the session that produced it. Without it the row reads "n/a",
 # which is honest but not much use later.
@@ -267,6 +273,9 @@ main() {
     evidence)  cmd_evidence  "$@" ;;
     benchmark) cmd_benchmark "$@" ;;
     partexp)   cmd_partexp   "$@" ;;
+    breakschema) cmd_breakschema "$@" ;;
+    crawl)     cmd_crawl     "$@" ;;
+    publish)   cmd_publish   "$@" ;;
     status)    cmd_status    "$@" ;;
     fmt)       cmd_fmt       "$@" ;;
     help|-h|--help) cmd_help ;;

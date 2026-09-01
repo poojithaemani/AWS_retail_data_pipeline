@@ -1,0 +1,64 @@
+{
+  "products_raw: sum(price)": {
+    "sql": "SELECT round(sum(price),2) FROM products_raw",
+    "state": "SUCCEEDED",
+    "reason": null,
+    "rows": [
+      [
+        "_col0"
+      ],
+      [
+        "59038.96"
+      ]
+    ]
+  },
+  "products_csv (clean copy): sum(price)": {
+    "sql": "SELECT round(sum(price),2) FROM products_csv",
+    "state": "SUCCEEDED",
+    "reason": null,
+    "rows": [
+      [
+        "_col0"
+      ],
+      [
+        ""
+      ]
+    ]
+  },
+  "drifted: sum(price)": {
+    "sql": "SELECT round(sum(price),2) FROM products_20260901_csv",
+    "state": "FAILED",
+    "reason": "COLUMN_NOT_FOUND: line 1:18: Column 'price' cannot be resolved or requester is not authorized to access requested resources"
+  },
+  "drifted: what IS there": {
+    "sql": "SELECT * FROM products_20260901_csv LIMIT 2",
+    "state": "SUCCEEDED",
+    "reason": null,
+    "rows": [
+      [
+        "col0",
+        "col1",
+        "col2",
+        "col3"
+      ]
+    ]
+  },
+  "revenue via products_raw": {
+    "sql": "SELECT round(sum(o.quantity*p.price),2) FROM orders_raw o JOIN products_raw p ON o.product_id=p.product_id",
+    "state": "SUCCEEDED",
+    "reason": null,
+    "rows": [
+      [
+        "_col0"
+      ],
+      [
+        "1.21244306E7"
+      ]
+    ]
+  },
+  "revenue via drifted table": {
+    "sql": "SELECT round(sum(o.quantity*p.price),2) FROM orders_raw o JOIN products_20260901_csv p ON o.product_id=p.product_id",
+    "state": "FAILED",
+    "reason": "COLUMN_NOT_FOUND: line 2:49: Column 'p.product_id' cannot be resolved or requester is not authorized to access requested resources"
+  }
+}

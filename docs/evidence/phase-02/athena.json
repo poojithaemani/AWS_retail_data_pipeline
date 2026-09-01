@@ -1,0 +1,195 @@
+{
+  "workgroup": "de-training-wg",
+  "queries": [
+    {
+      "query_id": "1c445f5b-8d07-47c6-bc78-57e551f0e760",
+      "sql": "SELECT customer_id, customer_name, country FROM customers_raw ORDER BY customer_id LIMIT 1",
+      "state": "FAILED",
+      "submitted": "2026-09-01 12:22:38.386000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 427,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "37a0cce3-2c60-4c35-aa2e-6df2d7eb2730",
+      "sql": "SELECT round(sum(price),2) FROM products_csv",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 15:24:21.698000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 532,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "d4f56e42-aa33-4f44-8733-a949987618a6",
+      "sql": "SELECT c.country, round(sum(o.quantity * p.price), 2) AS revenue FROM orders_raw o JOIN customers_raw c ON o.customer_id = c.customer_id JOIN products_raw p ON o.product_id = p.product_id GROUP BY c.country ORDER BY revenue DESC LIMIT 2",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 14:29:04.884000-07:00",
+      "bytes_scanned": 882195,
+      "megabytes_scanned": 0.882,
+      "runtime_ms": 1072,
+      "estimated_usd": 4e-06
+    },
+    {
+      "query_id": "52a569fd-f82a-4364-9cfc-4e73758aca9d",
+      "sql": "SELECT * FROM customers_raw LIMIT 2",
+      "state": "SUCCEEDED",
+      "submitted": "2026-08-31 16:15:25.474000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 550,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "cd0b0d5a-f104-4152-9c79-87c71e9e96e1",
+      "sql": "SELECT count(*) AS n FROM products_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-08-31 16:15:26.791000-07:00",
+      "bytes_scanned": 9158,
+      "megabytes_scanned": 0.009,
+      "runtime_ms": 581,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "3f2f05a7-f70c-41e9-b616-7883ca01ec4d",
+      "sql": "SELECT round(sum(price),2) FROM products_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 15:24:20.812000-07:00",
+      "bytes_scanned": 9158,
+      "megabytes_scanned": 0.009,
+      "runtime_ms": 540,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "1b03213d-dc9c-4f67-a7b1-2812eb8fb49e",
+      "sql": "SELECT round(sum(o.quantity*p.price),2) FROM orders_raw o JOIN products_20260901_csv p ON o.product_id=p.product_id",
+      "state": "FAILED",
+      "submitted": "2026-09-01 15:24:25.949000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 266,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "016606fc-9303-421d-98c2-1ff7272ccce0",
+      "sql": "SELECT count(*) AS n, round(avg(price),2) AS avg_price FROM products_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 14:29:02.289000-07:00",
+      "bytes_scanned": 9158,
+      "megabytes_scanned": 0.009,
+      "runtime_ms": 535,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "eebd7e98-b02e-458c-afaf-8dc8858c977f",
+      "sql": "SELECT count(*) AS n FROM customers_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-08-31 16:15:24.178000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 680,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "70ac04f4-2d85-44b6-92ce-7460539a5727",
+      "sql": "SELECT count(*) AS n FROM orders_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-08-31 16:15:29.382000-07:00",
+      "bytes_scanned": 806843,
+      "megabytes_scanned": 0.807,
+      "runtime_ms": 824,
+      "estimated_usd": 4e-06
+    },
+    {
+      "query_id": "ef288b6b-942a-4294-acc9-efc85f4b2d74",
+      "sql": "SELECT * FROM products_20260901_csv LIMIT 2",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 15:24:23.260000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 429,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "53f45856-2bd1-4106-9f6f-ddee3195c68a",
+      "sql": "SELECT count(*) FROM customers_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 12:22:37.358000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 670,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "7c628965-1c21-479c-b0df-afa6b1d19c77",
+      "sql": "SELECT count(DISTINCT year||month||day) AS days FROM orders_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-08-31 16:15:30.663000-07:00",
+      "bytes_scanned": 806843,
+      "megabytes_scanned": 0.807,
+      "runtime_ms": 784,
+      "estimated_usd": 4e-06
+    },
+    {
+      "query_id": "930692cc-c918-40e6-9aef-bf99cc43f3b0",
+      "sql": "SELECT count(*) FROM customers_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 14:28:59.680000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 821,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "8bf03093-6aa8-47c4-8462-aec9673f9aee",
+      "sql": "SELECT round(sum(o.quantity*p.price),2) FROM orders_raw o JOIN products_raw p ON o.product_id=p.product_id",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 15:24:24.140000-07:00",
+      "bytes_scanned": 816001,
+      "megabytes_scanned": 0.816,
+      "runtime_ms": 1160,
+      "estimated_usd": 4e-06
+    },
+    {
+      "query_id": "0b4e1b54-7f91-46dc-9b3f-64379eae042a",
+      "sql": "SELECT customer_id, customer_name, country FROM customers_raw ORDER BY customer_id LIMIT 2",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 14:29:00.985000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 624,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "ec527926-f124-4661-9ea9-61612149c364",
+      "sql": "SELECT round(avg(price),2) AS avg_price FROM products_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-08-31 16:15:28.089000-07:00",
+      "bytes_scanned": 9158,
+      "megabytes_scanned": 0.009,
+      "runtime_ms": 624,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "022aa970-c1db-4910-91e4-badce7a92556",
+      "sql": "SELECT round(sum(price),2) FROM products_20260901_csv",
+      "state": "FAILED",
+      "submitted": "2026-09-01 15:24:22.541000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 310,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "06c06f92-7001-44d0-901d-6e47dd85bc37",
+      "sql": "SELECT count(*) AS n, count(DISTINCT year||month||day) AS days FROM orders_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 14:29:03.103000-07:00",
+      "bytes_scanned": 806843,
+      "megabytes_scanned": 0.807,
+      "runtime_ms": 1117,
+      "estimated_usd": 4e-06
+    }
+  ]
+}

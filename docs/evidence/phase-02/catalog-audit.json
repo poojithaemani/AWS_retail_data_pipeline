@@ -1,0 +1,16 @@
+{
+  "database": "training_db",
+  "tables": [
+    "customers_raw",
+    "orders_raw",
+    "products_raw"
+  ],
+  "required": [
+    "customers_raw",
+    "orders_raw",
+    "products_raw"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "ok": true
+}

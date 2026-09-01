@@ -17,3 +17,8 @@ output "glue_log_group" {
   description = "CloudWatch log group for Glue jobs."
   value       = aws_cloudwatch_log_group.glue.name
 }
+
+output "crawler_name" {
+  description = "Run with: aws glue start-crawler --name <this>"
+  value       = aws_glue_crawler.raw.name
+}

@@ -31,13 +31,33 @@ Used in: Phases 3, 4 · Purpose: Glue ETL and PySpark examples
 
 | | |
 | --- | --- |
-| Studied | _pending Phase 3_ |
-| Patterns borrowed | |
-| Rejected, and why | |
-| Applies to our dataset how | |
+| Studied | Phase 2: crawler behaviour and `ResolveChoice`. Phase 3 will revisit for the ETL patterns. |
+| Patterns borrowed | The `ResolveChoice` idea, as the answer to the `price = UNKNOWN` problem this phase creates |
+| Rejected, and why | Nothing yet - Phase 2 needed catalog behaviour, which is documentation rather than sample code |
+| Applies to our dataset how | `ResolveChoice(specs=[("price", "cast:double")])` is what a Phase 3 job would use to survive a column the crawler retyped to string |
 
 Focus per the brief: DynamicFrames, DataFrames, joins, mapping,
 relationalization, data cleaning, `ApplyMapping`, `ResolveChoice`.
+
+**What Phase 2 needed from AWS material was documentation, not samples.** The
+question was whether a crawler adopts an existing catalog table when the S3
+location matches - which would have let the required `customers_raw` names be
+pre-created and then populated by the crawl. The Developer Guide answers it
+directly and negatively:
+
+> "The name of the table is based on the Amazon S3 prefix or folder name."
+> "If duplicate table names are encountered, the crawler adds a hash string
+> suffix to the name."
+
+Table naming is controlled only by the folder and an optional *prefix*; there
+is no suffix and no custom naming. The guide's own suggested workaround is to
+use the Glue API to rename after creation, which is what
+`scripts/publish_catalog.py` implements.
+
+That check was worth the ten minutes. The design it replaced was built on an
+assumption that reads plausibly and is wrong, and the failure mode would have
+been silent: hash-suffixed duplicate tables sitting beside stale hand-written
+ones, with the required names present and therefore appearing correct.
 
 Question to answer: **DynamicFrame or DataFrame?** DynamicFrames handle schema
 ambiguity (`ResolveChoice`) which is exactly the `price = UNKNOWN` problem from

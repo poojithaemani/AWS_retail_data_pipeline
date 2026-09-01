@@ -238,6 +238,35 @@ def collect_catalog(session: boto3.Session) -> dict[str, Any]:
     except AWS_ERRORS as exc:
         return {"error": str(exc)[:200]}
 
+    # Crawler configuration and run history, added in Phase 2. The run record
+    # is the evidence that schema discovery actually happened, and
+    # TablesUpdated is what shows a re-crawl changing an existing schema rather
+    # than creating something new.
+    try:
+        for crawler in glue.get_crawlers().get("Crawlers", []):
+            last = crawler.get("LastCrawl", {})
+            out.setdefault("crawlers", []).append(
+                {
+                    "name": crawler["Name"],
+                    "state": crawler.get("State"),
+                    "targets": [
+                        target.get("Path")
+                        for target in crawler.get("Targets", {}).get("S3Targets", [])
+                    ],
+                    "update_behavior": crawler.get("SchemaChangePolicy", {}).get("UpdateBehavior"),
+                    "delete_behavior": crawler.get("SchemaChangePolicy", {}).get("DeleteBehavior"),
+                    "recrawl_behavior": crawler.get("RecrawlPolicy", {}).get("RecrawlBehavior"),
+                    "last_status": last.get("Status"),
+                    "last_started": str(last.get("StartTime", "")),
+                    "tables_created": last.get("TablesCreated"),
+                    "tables_updated": last.get("TablesUpdated"),
+                    "tables_deleted": last.get("TablesDeleted"),
+                    "error": last.get("ErrorMessage"),
+                }
+            )
+    except AWS_ERRORS as exc:
+        out["crawlers"] = {"error": str(exc)[:200]}
+
     return out
 
 

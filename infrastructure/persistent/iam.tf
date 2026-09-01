@@ -85,6 +85,32 @@ data "aws_iam_policy_document" "lake_access" {
     ]
   }
 
+  # Test fixtures. Read-only, and added in response to an actual denial rather
+  # than pre-emptively.
+  #
+  # Phase 2 pointed the crawler at fixtures/products_drift/ and every crawl
+  # returned SUCCEEDED while creating nothing. The reason was in the crawler
+  # log, not in the crawl status:
+  #
+  #     Service Principal: glue.amazonaws.com is not authorized to perform:
+  #     s3:GetObject on .../fixtures/products_drift/products_20260901.csv
+  #     because no identity-based policy allows the s3:GetObject action
+  #
+  # The prefix-split policy written in Phase 1 named raw, processed, curated,
+  # quarantine, athena-results, temp and scripts. fixtures/ was created later,
+  # so nothing granted access to it - least privilege working exactly as
+  # intended, on a prefix that turned out to be needed.
+  #
+  # GetObject only. Fixtures are inputs to be read, never written or deleted by
+  # the ETL role: they are produced locally and delivered by the ingestion
+  # identity, the same division as raw/.
+  statement {
+    sid       = "ReadTestFixtures"
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.lake.arn}/fixtures/*"]
+  }
+
   statement {
     sid       = "ReadJobScripts"
     effect    = "Allow"
