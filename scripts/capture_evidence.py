@@ -23,6 +23,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import ast
 import datetime as dt
 import json
 import os
@@ -270,19 +271,115 @@ def collect_catalog(session: boto3.Session) -> dict[str, Any]:
     return out
 
 
+def collect_etl(session: boto3.Session) -> dict[str, Any]:
+    """Glue job definitions and run history, added in Phase 3.
+
+    The reconciliation is the point. A curated dataset is only trustworthy if
+    every source row is accounted for, and the run that produced it is the only
+    place that proof exists - `curated/` shows what survived, never what did
+    not. Once the training layer is destroyed the job and its logs go with it,
+    so the numbers are lifted out of CloudWatch and into the evidence pack.
+
+    Run history is capped at the five most recent per job: enough to show a
+    failure followed by a fix, which is the interesting shape, without
+    embedding an unbounded log.
+    """
+    glue = session.client("glue", region_name=REGION)
+    logs = session.client("logs", region_name=REGION)
+    out: dict[str, Any] = {"jobs": []}
+
+    try:
+        job_names = glue.list_jobs().get("JobNames", [])
+    except AWS_ERRORS as exc:
+        return {"error": str(exc)[:200]}
+
+    for name in job_names:
+        try:
+            job = glue.get_job(JobName=name)["Job"]
+            arguments = job.get("DefaultArguments", {})
+            record: dict[str, Any] = {
+                "name": name,
+                "glue_version": job.get("GlueVersion"),
+                "worker_type": job.get("WorkerType"),
+                "number_of_workers": job.get("NumberOfWorkers"),
+                "max_retries": job.get("MaxRetries"),
+                "timeout_minutes": job.get("Timeout"),
+                "script_location": job.get("Command", {}).get("ScriptLocation"),
+                # The two arguments that carry a decision rather than a path.
+                "bookmarks": arguments.get("--job-bookmark-option"),
+                "glue_data_catalog_enabled": arguments.get("--enable-glue-datacatalog"),
+                "runs": [],
+            }
+
+            runs = glue.get_job_runs(JobName=name, MaxResults=5).get("JobRuns", [])
+            for run in runs:
+                entry = {
+                    "id": run.get("Id"),
+                    "state": run.get("JobRunState"),
+                    "started": str(run.get("StartedOn", "")),
+                    "execution_seconds": run.get("ExecutionTime"),
+                    "dpu_seconds": run.get("DPUSeconds"),
+                    "error": (run.get("ErrorMessage") or "")[:300] or None,
+                }
+                reconciliation = _reconciliation_from_logs(logs, run.get("Id", ""))
+                if reconciliation is not None:
+                    entry["reconciliation"] = reconciliation
+                record["runs"].append(entry)
+
+            out["jobs"].append(record)
+        except AWS_ERRORS as exc:
+            out["jobs"].append({"name": name, "error": str(exc)[:200]})
+
+    return out
+
+
+def _reconciliation_from_logs(logs: Any, run_id: str) -> dict[str, Any] | None:
+    """Lift the reconciliation dict the job logged for one run.
+
+    It lands in /aws-glue/jobs/error rather than .../output: GlueLogger writes
+    through log4j to the driver's stderr, which is a genuinely surprising place
+    to find an INFO line and cost a while to locate the first time.
+    """
+    if not run_id:
+        return None
+    try:
+        events = logs.filter_log_events(
+            logGroupName="/aws-glue/jobs/error",
+            logStreamNames=[run_id],
+            filterPattern="reconciliation",
+        ).get("events", [])
+    except AWS_ERRORS:
+        return None
+
+    for event in events:
+        message = event.get("message", "")
+        start, end = message.find("{"), message.rfind("}")
+        if start == -1 or end == -1:
+            continue
+        try:
+            # ast.literal_eval, not json.loads: Python dict repr, single quotes.
+            return ast.literal_eval(message[start : end + 1])
+        except (ValueError, SyntaxError):
+            continue
+    return None
+
+
 COLLECTORS: dict[str, Callable[[boto3.Session], dict[str, Any]]] = {
     "context": collect_context,
     "lake": collect_lake,
     "athena": collect_athena,
     "catalog": collect_catalog,
+    "etl": collect_etl,
 }
 
 # Deliberately not built yet: data_quality, orchestration, warehouse,
 # governance, monitoring, terraform. Each is roughly thirty lines of boto3
-# following the same shape as the three above - a paginated list call, a few
+# following the same shape as the five above - a paginated list call, a few
 # fields kept, errors caught and recorded rather than raised. They get written
 # in the phase that first produces something for them to collect, rather than
-# speculatively now, when eight of ten collectors would return empty.
+# speculatively now, when most would return empty.
+#
+# `etl` was added in Phase 3, on the day there was a job run to record.
 
 
 # --------------------------------------------------------------------------
@@ -330,6 +427,32 @@ def write_summary(target: Path, phase: str, snapshot: dict[str, Any], note: str)
                 f"{query.get('runtime_ms')} | `{sql}` |"
             )
         lines.append("")
+
+    jobs = snapshot.get("etl", {}).get("jobs", [])
+    if jobs:
+        lines += ["## Glue ETL runs", ""]
+        for job in jobs:
+            if "error" in job:
+                lines += [f"`{job['name']}` &mdash; {job['error']}", ""]
+                continue
+            lines += [
+                f"`{job['name']}` &mdash; Glue {job.get('glue_version')}, "
+                f"{job.get('number_of_workers')} x {job.get('worker_type')}, "
+                f"bookmarks `{job.get('bookmarks')}`",
+                "",
+                "| run | state | sec | DPU-sec | source | dupes | valid | rejected | curated | balanced |",
+                "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+            ]
+            for run in job.get("runs", []):
+                rec = run.get("reconciliation") or {}
+                lines.append(
+                    f"| `{str(run.get('id'))[:12]}...` | {run.get('state')} | "
+                    f"{run.get('execution_seconds')} | {run.get('dpu_seconds')} | "
+                    f"{rec.get('source_rows', '-')} | {rec.get('duplicates_removed', '-')} | "
+                    f"{rec.get('valid_rows', '-')} | {rec.get('rejected_rows', '-')} | "
+                    f"{rec.get('curated_rows', '-')} | {rec.get('balanced', '-')} |"
+                )
+            lines.append("")
 
     # Collector status, stated rather than left to be inferred. An "error" here
     # is often the expected result -- a workgroup that is "not found" after a
