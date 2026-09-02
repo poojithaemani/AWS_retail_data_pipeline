@@ -70,6 +70,25 @@ resource "aws_s3_object" "job_script" {
   }
 }
 
+# The data contract, deployed beside the code rather than compiled into it.
+#
+# config/pipeline.json existed from Phase 0 and nothing read it, while the same
+# values were repeated as an f-string, two default arguments and four job
+# arguments below. Shipping it as its own object is what makes the phrase
+# "configuration-driven" mean something: the prefix or partitioning can be
+# corrected and the job re-run without rebuilding the code package.
+resource "aws_s3_object" "pipeline_config" {
+  bucket      = local.lake_bucket
+  key         = "scripts/pipeline.json"
+  source      = "${path.module}/../../config/pipeline.json"
+  source_hash = filemd5("${path.module}/../../config/pipeline.json")
+
+  tags = {
+    Name    = "pipeline.json"
+    Purpose = "Data contract read at runtime by the curated sales job"
+  }
+}
+
 resource "aws_glue_job" "curated_sales" {
   name        = "${var.project}-curated-sales"
   role_arn    = local.glue_role
@@ -97,19 +116,24 @@ resource "aws_glue_job" "curated_sales" {
     "--extra-py-files" = "s3://${local.lake_bucket}/${aws_s3_object.job_package.key}"
     "--TempDir"        = "s3://${local.lake_bucket}/temp/"
 
+    "--pipeline_config" = "s3://${local.lake_bucket}/${aws_s3_object.pipeline_config.key}"
+
     "--database"        = var.glue_database
     "--lake_bucket"     = local.lake_bucket
     "--curated_prefix"  = "curated/sales"
     "--rejected_prefix" = "quarantine/sales"
 
-    # Bookmarks OFF for Phase 3, deliberately.
+    # Bookmarks ON - the Phase 4 exercise.
     #
-    # With them on, the second run of a job processes zero rows - which during
-    # development is indistinguishable from a broken job, and costs an hour of
-    # confusion the first time it happens. Bookmarks are the Phase 4 exercise,
-    # where "the re-run reprocessed 0 rows" is the intended result rather than
-    # a surprise.
-    "--job-bookmark-option" = "job-bookmark-disable"
+    # Phase 3 ran with these disabled so that "the second run processed zero
+    # rows" could not be confused with a broken job. Here that is the intended
+    # result and the thing being demonstrated.
+    #
+    # This only works because orders are read through Glue's own reader with a
+    # transformation_ctx (see scripts/glue_jobs/curated_sales.py). Bookmark
+    # state is tracked per transformation_ctx by that reader; a plain
+    # spark.sql() read ignores it, and this flag would then be a silent no-op.
+    "--job-bookmark-option" = "job-bookmark-enable"
 
     # Without this, spark.sql() resolves against Spark's own in-memory
     # catalog and never sees training_db - the first read fails with
@@ -120,7 +144,16 @@ resource "aws_glue_job" "curated_sales" {
 
     "--enable-metrics"                   = "true"
     "--enable-continuous-cloudwatch-log" = "true"
-    "--enable-spark-ui"                  = "false" # writes event logs to S3; not needed here
+
+    # Without this, the log group this layer creates receives nothing: Glue
+    # falls back to its own service-owned /aws-glue/jobs/* groups, which
+    # survive teardown and belong to no phase. Pointing continuous logging at
+    # ours makes the logs Terraform-owned and destroyed with the layer.
+    # Note the job's stdout/stderr streams still also go to Glue's defaults;
+    # the reconciliation line is read from /aws-glue/jobs/error by
+    # scripts/capture_evidence.py, which is verified working.
+    "--continuous-log-logGroup" = aws_cloudwatch_log_group.glue.name
+    "--enable-spark-ui"         = "false" # writes event logs to S3; not needed here
   }
 
   tags = {

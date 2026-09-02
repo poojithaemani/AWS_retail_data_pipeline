@@ -6,7 +6,7 @@
     "number_of_workers": 2,
     "max_retries": 0,
     "timeout_minutes": 30,
-    "job_bookmarks": "job-bookmark-disable",
-    "_job_bookmarks_note": "Disabled for Phase 3. With bookmarks on, a re-run processes zero rows and looks like a broken job, which costs debugging time and demonstrates nothing. Bookmarks are the Phase 4 exercise; they get enabled there, where 'the second run reprocessed 0 rows' is the result rather than a surprise."
+    "job_bookmarks": "job-bookmark-enable",
+    "_job_bookmarks_note": "Enabled in Phase 4. Requires orders to be read through Glue's own reader with a transformation_ctx; a plain spark.sql() read ignores bookmarks and this setting becomes a silent no-op. Dimensions are deliberately not bookmarked - a bookmark on customers or products would read zero rows on the second run and quarantine every order as an orphan."
   }
 }
