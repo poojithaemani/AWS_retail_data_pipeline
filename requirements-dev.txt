@@ -4,3 +4,12 @@ pytest-cov>=5.0
 black>=24.0
 ruff>=0.5
 moto[s3,glue]>=5.0
+
+# Pinned to match the Glue 5.0 runtime (Spark 3.5), not to the newest release.
+#
+# Spark 4 turns ANSI mode ON by default: an invalid cast raises instead of
+# returning null. This ETL casts quantities and dates that may be malformed, so
+# tests on Spark 4 would exercise different behaviour from the job in Glue - on
+# exactly the code path that matters. Testing against a Spark the job will
+# never run on is worse than not testing.
+pyspark==3.5.*

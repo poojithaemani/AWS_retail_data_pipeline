@@ -251,3 +251,42 @@ def test_no_state_files_are_tracked() -> None:
     tracked = {path.name for path in tracked_files()}
     leaked = {name for name in tracked if name.endswith(".tfstate") or name.endswith(".tfvars")}
     assert not leaked, f"Terraform state or vars committed: {leaked}"
+
+
+def test_glue_job_zip_preserves_the_package_directory() -> None:
+    """The zip Glue receives must contain retail_pipeline/, not bare modules.
+
+    `archive_file` zips the *contents* of `source_dir`. Pointing it at
+    `src/retail_pipeline` therefore produces an archive whose root is
+    `transforms.py`, with no enclosing package -- and since Glue puts the zip
+    itself on `sys.path`, the entry script's `from retail_pipeline import
+    transforms` fails with ModuleNotFoundError at startup, after the run has
+    been billed. The distinction is invisible in a plan and costs a job run to
+    discover, so it is asserted here instead.
+    """
+    body = (REPO_ROOT / "infrastructure" / "training" / "glue_job.tf").read_text(
+        encoding="utf-8"
+    )
+    match = re.search(r'source_dir\s*=\s*"\$\{path\.module\}/\.\./\.\./([^"]+)"', body)
+    assert match, "archive_file.retail_pipeline has no recognisable source_dir"
+    assert match.group(1) == "src", (
+        "source_dir must be src/ so the archive keeps retail_pipeline/ inside it; "
+        f"found src-relative path {match.group(1)!r}"
+    )
+
+    package_dir = REPO_ROOT / "src" / "retail_pipeline"
+    assert (package_dir / "__init__.py").is_file(), "retail_pipeline must be a package"
+
+    # Anything else added under src/ must be excluded explicitly, or it ends up
+    # shipped to Glue -- generate/ drags in pandas for no runtime reason.
+    excludes = re.search(r"excludes\s*=\s*\[(.*?)\]", body, re.S)
+    assert excludes, "archive_file.retail_pipeline must declare excludes"
+    excluded = set(re.findall(r'"([^"]+)"', excludes.group(1)))
+    shipped = {
+        entry.name
+        for entry in (REPO_ROOT / "src").iterdir()
+        if entry.is_dir() and entry.name != "retail_pipeline"
+    }
+    assert shipped <= excluded, (
+        f"these src/ directories would be shipped to Glue unexcluded: {shipped - excluded}"
+    )
