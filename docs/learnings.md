@@ -713,3 +713,145 @@ proportion to its size.
 Three of the five runs were failures — and at roughly two cents each, that is
 an entirely reasonable way to learn what the documentation did not say.
 
+---
+
+## Phase 4 — Production hardening & incremental
+
+**Built**
+
+Job bookmarks and incremental processing, on the Phase 3 pipeline unchanged.
+Six files, and only one of them contains transformation code - which was the
+point. `src/retail_pipeline/transforms.py` has **eight added lines, all inside
+a docstring**; no function signature or expression differs from Phase 3.
+
+- `src/retail_pipeline/config.py` - reads `config/pipeline.json` at runtime
+- `scripts/glue_jobs/curated_sales.py` - bookmarked read, contract, zero-run guard
+- `infrastructure/training/glue_job.tf` - bookmarks on, contract deployed, logging wired
+- `config/dev.json` - the bookmark setting, and why
+
+**Concepts**
+
+*Bookmarks are a property of the reader, not of the job.* Setting
+`--job-bookmark-enable` does nothing on its own. State is tracked per
+`transformation_ctx` by Glue's own readers; a plain `spark.sql()` read ignores
+it entirely. Enabling the flag while reading through Spark SQL would have
+produced a job that reprocessed everything on every run and still reported
+SUCCEEDED - a silent no-op, which is the worst shape a failure can take. Caught
+before spending anything, by reading how the mechanism works rather than
+assuming the flag was self-contained.
+
+That forced exactly one DynamicFrame into the codebase, at the read of
+`orders`, converted with `.toDF()` on the following line. It lives in the entry
+script - the thin layer that already cannot be unit-tested - so `transforms.py`
+stays pure PySpark and all sixteen transform tests remain valid. A DynamicFrame
+as an integration-boundary adapter is a different thing from a DynamicFrame as
+a data model, and only the second one was ever worth refusing.
+
+*Bookmark the fact table, never the dimensions.* A bookmark on `customers` or
+`products` would mean the second run reads zero dimension rows, every order
+fails its referential check, and the job quarantines the entire tranche as
+orphans - while reporting a balanced reconciliation and SUCCEEDED. The
+reconciliation identity cannot catch this, because nothing is lost: the rows
+are all accounted for, just in the wrong bucket. Both dimensions stay on
+`spark.sql()` and are re-read in full every run.
+
+*Configuration that nothing reads is not configuration.* `config/pipeline.json`
+existed from Phase 0 and was never opened. The same values lived in four other
+places: an f-string in `extract()`, two default arguments, and four Terraform
+job arguments. It is now deployed as its own S3 object and read at runtime, so
+the curated prefix or partitioning can be corrected and the job re-run without
+rebuilding the code package.
+
+Where the contract and the code could disagree, the job now refuses rather than
+guesses. `write_output` writes snappy; if the contract ever asks for something
+else the job raises instead of silently writing a format the contract does not
+describe. That check replaced a `compression` parameter that would have been
+plumbed through `transforms.py` to change nothing - the contract already said
+`snappy`.
+
+**The incremental exercise**
+
+Three runs against the same job, delivering one 2,000-order tranche between the
+first and the second:
+
+| run | partitions available | rows read | outcome |
+| --- | ---: | ---: | --- |
+| 1 | 43 | **13,861** | 10,060 curated |
+| 2 | 44 | **2,000** | only the new tranche |
+| 3 | 44 | **0** | clean no-op, SUCCEEDED |
+
+Run 2 reading 2,000 rather than 15,861 is the proof. Run 3 reading zero and
+still succeeding is the other half of it: a pipeline that treats "nothing new
+arrived" as an error would page someone every night for working correctly.
+
+**Broke**
+
+*A bookmarked read with nothing new returns no schema, not just no rows.*
+
+Run 3 failed:
+
+    source orders: 0
+    AnalysisException: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION]
+      A column or function parameter with name `order_id` cannot be resolved.
+      transforms.py line 114, in deduplicate
+
+The bookmark worked perfectly - `source orders: 0` is exactly right. When the
+bookmark excludes every file there is nothing to infer a schema from, so
+`create_dynamic_frame.from_catalog(...).toDF()` returns a frame with zero rows
+**and zero columns**. `deduplicate()` then windows over `order_id`, which no
+longer exists.
+
+*The uncomfortable part is that a test covered this case and passed.* It built
+an empty DataFrame **with the orders schema** - the case I imagined rather than
+the one the runtime produces. It gave confidence worth less than no test at
+all, because it made the gap look closed. The corrected test builds
+`spark.createDataFrame([], StructType([]))` and asserts that `deduplicate()`
+**raises**, deliberately: the transformations should not be taught to tolerate
+a schemaless frame. The integration boundary is what must notice.
+
+**Fixed**
+
+Seven lines in the entry script, after the read:
+
+    if not orders.columns:
+        log.info("no new data since the last bookmark; nothing to process")
+        log.info(f"reconciliation: {T.reconcile(0, 0, 0, 0, 0)}")
+        job.commit()
+        return
+
+`job.commit()` still runs, so the bookmark advances. Verified by
+`get-job-bookmark`: `RunId` points at the successful run and the state holds
+`{"orders_source": ...}`, the `transformation_ctx` from the entry script.
+
+*The failed run did not corrupt bookmark state.* It logged `source orders: 0`
+before crashing, meaning it read against an already-correct bookmark committed
+by Run 2, and never needed to commit its own. Bookmark state was retained
+across the failure - worth knowing, because the alternative would have meant a
+failed run silently re-processing a tranche on the next attempt.
+
+**Fixed by accident: the Phase 3 header defect**
+
+Phase 3 recorded that Spark ignores `skip.header.line.count` where Athena
+honours it, putting 42 CSV headers into the pipeline, and deferred it to Phase
+5. Run 1 read **13,861** rows where Phase 3 read 13,904, and rejected 40 rows
+where Phase 3 rejected 41. The difference is exactly the 43 header rows and the
+one that survived deduplication.
+
+The Glue DynamicFrame reader honours the table property that `spark.sql()`
+ignored. The defect was closed as a side effect of a change made for an
+unrelated reason - which is worth recording precisely because it was luck. The
+troubleshooting entry has been updated rather than deleted: the reasoning that
+led to deferring it was sound on the evidence available then.
+
+**Skipped, deliberately**
+
+The brief lists Docker-based local Glue development and a 100k/5k/1M dataset.
+Neither was done. Local testing already runs against real Spark in seconds with
+no console involvement, which is what that topic is *for*; an 8 GB image would
+have added a download, not a capability. A 2,000-row tranche demonstrates
+incremental processing exactly as well as a million-row one, at a fraction of
+the runtime. Retries stay at `max_retries = 0` - retrying a deterministic data
+failure three times bills three times and teaches nothing.
+
+**Cost:** 646 DPU-seconds across four runs (~$0.08), plus two crawls (~$0.14).
+

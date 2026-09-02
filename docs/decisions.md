@@ -556,3 +556,36 @@ shape — packaging, Data Catalog access, and now this — all in the thin,
 untestable layer between tested code and AWS. `scripts/glue_jobs/` earns
 review attention disproportionate to its size.
 
+---
+
+## D23 — One DynamicFrame, at the read of orders only
+
+Phase 3 decided DataFrames throughout and no DynamicFrames, and that decision
+stands everywhere except a single line.
+
+Job bookmarks are not a property of the job. `--job-bookmark-enable` tracks
+state per `transformation_ctx` **on Glue's own readers**; a plain `spark.sql()`
+read does not participate at all. Enabling the flag while reading through Spark
+SQL produces a job that reprocesses everything on every run and reports
+SUCCEEDED - it does not fail, it simply does nothing, which is why it would
+have survived a casual review.
+
+So `orders` is read with `create_dynamic_frame.from_catalog(...,
+transformation_ctx="orders_source")` and converted with `.toDF()` on the next
+line. It sits in `scripts/glue_jobs/curated_sales.py`, the layer that already
+imports `awsglue` and already cannot be unit-tested. `transforms.py` is
+untouched and every transform test remains valid.
+
+The original objection was to DynamicFrames as a *data model* - `ResolveChoice`
+and schema ambiguity leaking through the transformations. An adapter at the
+integration boundary, discarded one line later, is a different thing, and only
+the first was ever worth refusing.
+
+**Dimensions are deliberately not bookmarked.** `customers` and `products` stay
+on `spark.sql()` and are re-read in full every run. A bookmark on either means
+the second run reads zero dimension rows, every order fails referential
+integrity, and the job quarantines the whole tranche as orphans while reporting
+a balanced reconciliation and SUCCEEDED. The reconciliation identity cannot
+catch that: nothing is lost, it is merely all in the wrong bucket. Bookmarks
+belong on the fact table that grows, never on the lookups.
+

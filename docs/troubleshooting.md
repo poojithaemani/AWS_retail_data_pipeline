@@ -240,7 +240,7 @@ _Not started._
 | Phase | 03 |
 | Component | Glue / Spark SQL / Glue Data Catalog |
 | Deliberate? | no (real) |
-| Status | **documented, not fixed** — see Fix |
+| Status | **resolved in Phase 4**, incidentally — see Resolution |
 
 **Symptom** — the job's reconciliation reported 13,803 source rows. Every
 independent count of `orders_raw` says 13,761. The surplus was exactly 42 —
@@ -301,6 +301,19 @@ existing validation already handles correctly.
 between the source row count and the sum of its parts fails the job rather
 than passing quietly, which is how this was noticed at all. Recorded here so
 the 42-row discrepancy is not re-diagnosed from scratch next phase.
+
+**Resolution (Phase 4) — closed by accident.** Enabling job bookmarks required
+reading `orders` through `create_dynamic_frame.from_catalog` instead of
+`spark.sql`, for reasons that had nothing to do with headers. That reader
+honours `skip.header.line.count`. The first Phase 4 run read **13,861** rows
+where Phase 3 read 13,904, and rejected **40** where Phase 3 rejected 41 - the
+43 headers and the one survivor of deduplication, all gone.
+
+Kept rather than deleted, for two reasons. The reasoning that deferred this to
+Phase 5 was sound on the evidence available then, and the diagnosis - two
+engines disagreeing over one table definition locates the fault in the reader -
+is the transferable part. It is also a reminder that the fix was luck: nobody
+chose the DynamicFrame reader for its header handling.
 
 ---
 
