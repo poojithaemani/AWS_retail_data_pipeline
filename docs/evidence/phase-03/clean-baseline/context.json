@@ -1,0 +1,10 @@
+{
+  "captured_at_utc": "2026-09-02T04:31:48+00:00",
+  "account": "749185461065",
+  "caller": "arn:aws:iam::749185461065:user/dev-user",
+  "region": "us-east-2",
+  "project": "de-training",
+  "git_commit": "bb10cde799ef5002edfdab53e7e2922396041100",
+  "git_branch": "main",
+  "git_dirty": true
+}

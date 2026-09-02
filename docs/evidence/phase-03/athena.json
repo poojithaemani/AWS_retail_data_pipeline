@@ -1,0 +1,85 @@
+{
+  "workgroup": "de-training-wg",
+  "queries": [
+    {
+      "query_id": "3f965971-1d6c-4642-93cb-dccfa6a38243",
+      "sql": "SELECT COUNT(*) AS raw_rows, COUNT(DISTINCT order_id) AS distinct_ids, COUNT(DISTINCT year||month||day) AS partitions FROM orders_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 21:42:43.266000-07:00",
+      "bytes_scanned": 812802,
+      "megabytes_scanned": 0.813,
+      "runtime_ms": 859,
+      "estimated_usd": 4e-06
+    },
+    {
+      "query_id": "60ad7d05-7c67-47ea-981b-5516ad9854a7",
+      "sql": "SELECT COUNT(*) AS rows_kept, SUM(o.quantity * p.price) AS revenue FROM orders_raw o JOIN products_raw p ON o.product_id = p.product_id WHERE o.year='2026' AND o.month='09' AND o.day='02'",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 21:43:16.702000-07:00",
+      "bytes_scanned": 15117,
+      "megabytes_scanned": 0.015,
+      "runtime_ms": 1085,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "27dfd99a-0704-4ad7-bab0-5cc40ddfce4f",
+      "sql": "SELECT COUNT(*) AS orphan_rows, COUNT(DISTINCT o.product_id) AS orphan_products FROM orders_raw o LEFT JOIN products_raw p ON o.product_id = p.product_id WHERE p.product_id IS NULL AND o.order_id <> 'order_id'",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 21:42:53.367000-07:00",
+      "bytes_scanned": 821960,
+      "megabytes_scanned": 0.822,
+      "runtime_ms": 784,
+      "estimated_usd": 4e-06
+    },
+    {
+      "query_id": "1dc5c078-bf0a-4643-9a8e-55534a9d8a0c",
+      "sql": "SELECT COUNT(*) AS total_rows, COUNT(DISTINCT order_id) AS distinct_order_ids, SUM(CASE WHEN order_id='order_id' THEN 1 ELSE 0 END) AS header_rows_visible FROM orders_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 20:24:25.204000-07:00",
+      "bytes_scanned": 806843,
+      "megabytes_scanned": 0.807,
+      "runtime_ms": 968,
+      "estimated_usd": 4e-06
+    },
+    {
+      "query_id": "048841e9-60ef-477f-832e-c4cc532a0702",
+      "sql": "SELECT COUNT(DISTINCT year||'-'||month||'-'||day) AS raw_partitions, MIN(year||'-'||month||'-'||day) AS min_part, MAX(year||'-'||month||'-'||day) AS max_part, COUNT(DISTINCT date_format(date_parse(order_date,'%Y-%m-%d %H:%i:%s'),'%Y-%m-%d')) AS distinct_order_dates FROM orders_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 20:25:16.376000-07:00",
+      "bytes_scanned": 806843,
+      "megabytes_scanned": 0.807,
+      "runtime_ms": 1003,
+      "estimated_usd": 4e-06
+    },
+    {
+      "query_id": "7bf31106-6599-47da-98cb-2e06281797fe",
+      "sql": "SELECT order_id, COUNT(*) AS occurrences, MIN(order_date) AS earliest, MAX(order_date) AS latest FROM orders_raw GROUP BY order_id HAVING COUNT(*) > 1 ORDER BY order_id LIMIT 3",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 20:26:04.579000-07:00",
+      "bytes_scanned": 806843,
+      "megabytes_scanned": 0.807,
+      "runtime_ms": 817,
+      "estimated_usd": 4e-06
+    },
+    {
+      "query_id": "f6579aa0-93cc-40ed-8c28-cb1ca0c57059",
+      "sql": "SELECT substr(latest,1,7) AS latest_month, COUNT(*) AS order_ids FROM (SELECT order_id, MAX(order_date) AS latest FROM orders_raw GROUP BY order_id) GROUP BY substr(latest,1,7) ORDER BY 1",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 20:26:09.616000-07:00",
+      "bytes_scanned": 806843,
+      "megabytes_scanned": 0.807,
+      "runtime_ms": 714,
+      "estimated_usd": 4e-06
+    },
+    {
+      "query_id": "7339c604-599d-4cc8-b761-48142fb9d2a6",
+      "sql": "SELECT COUNT(*) AS rows_kept, SUM(o.quantity * p.price) AS revenue, SUM(CASE WHEN p.product_id IS NULL THEN 1 ELSE 0 END) AS null_price_rows FROM orders_raw o LEFT JOIN products_raw p ON o.product_id = p.product_id WHERE o.year='2026' AND o.month='09' AND o.day='02'",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-01 21:43:25.440000-07:00",
+      "bytes_scanned": 15117,
+      "megabytes_scanned": 0.015,
+      "runtime_ms": 759,
+      "estimated_usd": 0.0
+    }
+  ]
+}

@@ -519,3 +519,40 @@ wanted.
 **Cost accepted.** Two representations to keep roughly in step, and one manual
 export step. Where they disagree the `.drawio` wins, and that precedence is
 stated in `architecture.md`.
+
+---
+
+## D22 — Deduplication is a reconciliation category, not a discrepancy
+
+The Phase 3 job reconciles `source == valid + rejected`. That identity is
+false, and the first run that got far enough to write data failed on it:
+13,803 source rows against 10,000 valid and 1 rejected.
+
+Nothing was lost. `deduplicate()` had removed 3,802 rows — 3,761 genuine
+duplicate orders, plus 41 of the 42 CSV header rows collapsing into one — and
+the reconciliation had no term to put them in.
+
+Two ways to make the arithmetic work:
+
+- count `source_rows` *after* deduplication, so the identity holds trivially;
+- keep the raw count and add `duplicates_removed` as an explicit term.
+
+The second, because the first hides the number. "3,802 of 13,803 input rows
+were duplicates" is a fact about the source data worth reporting every run —
+it is how a duplicated upstream delivery would be noticed. Absorbing it into
+the source count would make the check pass while destroying the evidence.
+
+The contract is now:
+
+    source  == duplicates_removed + valid + rejected
+    dedup   == valid + rejected
+    curated == valid
+
+Worth noting *why* the unit tests missed it: the end-to-end test passed
+`deduped.count()` as the source count, so it asserted the identity the module
+could satisfy rather than the one the job actually used. The module was right;
+the entry script wired it wrong. That is the third Phase 3 defect of the same
+shape — packaging, Data Catalog access, and now this — all in the thin,
+untestable layer between tested code and AWS. `scripts/glue_jobs/` earns
+review attention disproportionate to its size.
+

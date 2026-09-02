@@ -231,6 +231,79 @@ _Not started._
 
 ---
 
+## Phase 3 — transformation (Glue PySpark ETL)
+
+### Spark ignores `skip.header.line.count`, so 42 CSV headers entered the pipeline
+
+| | |
+| --- | --- |
+| Phase | 03 |
+| Component | Glue / Spark SQL / Glue Data Catalog |
+| Deliberate? | no (real) |
+| Status | **documented, not fixed** — see Fix |
+
+**Symptom** — the job's reconciliation reported 13,803 source rows. Every
+independent count of `orders_raw` says 13,761. The surplus was exactly 42 —
+the number of partitions, and therefore the number of files.
+
+**Diagnosis** — in order:
+
+1. Counted the raw CSVs locally: 13,761 data rows across 42 files.
+2. Queried the same table through Athena, which reads the same Glue Catalog
+   table with the same SerDe:
+
+   ```sql
+   SELECT COUNT(*),
+          SUM(CASE WHEN order_id = 'order_id' THEN 1 ELSE 0 END)
+   FROM orders_raw
+   -- 13761, 0
+   ```
+
+   Athena sees 13,761 rows and zero header rows. So the *table property* is
+   present and correct — this is not a catalog defect.
+3. Confirmed the property is actually set: `skip.header.line.count=1` on all
+   three tables, applied by `publish_catalog.py`.
+4. 13,803 − 13,761 = 42 = one extra row per file. That shape can only be the
+   header of each file being read as data.
+
+The decisive step was 2: running the *same query engine-independently*. Athena
+and Spark read the identical table definition and disagreed, which located the
+problem in the reader rather than in the data or the catalog.
+
+**Cause** — Athena honours the `skip.header.line.count` table property. The
+Spark reader behind `spark.sql()` on Glue does not apply it for these tables,
+so each file's header line is returned as a data row.
+
+**Consequence — none, and by luck rather than design.** All 42 header rows
+share `order_id = 'order_id'`, so `deduplicate()` collapsed them to a single
+row, which `validate()` then rejected as `malformed_order_date`. The
+quarantine output contains exactly that row:
+
+```
+order_id  customer_id  product_id  quantity  order_date  status  rejection_reason
+order_id  customer_id  product_id       NaN         NaT  STATUS  malformed_order_date
+```
+
+No header value reached `curated/`. But nothing in the design *intended* this:
+the same defect on a file whose header happened to parse — a numeric-looking
+column name, say — would have produced a plausible bad row instead of an
+obviously rejected one.
+
+**Fix** — none applied, deliberately. The rows are already detected, rejected
+and quarantined with a reason, which is the behaviour the pipeline is supposed
+to have for unusable input. Forcing Spark to honour the property is a
+data-quality concern and belongs with the DQDL work in Phase 5, where "should
+this row exist at all" is the actual subject. Fixing it here would mean
+changing how the raw layer is read on the strength of an artifact that the
+existing validation already handles correctly.
+
+**Prevention** — the reconciliation is the guard. Any future divergence
+between the source row count and the sum of its parts fails the job rather
+than passing quietly, which is how this was noticed at all. Recorded here so
+the 42-row discrepancy is not re-diagnosed from scratch next phase.
+
+---
+
 ## Local development
 
 Issues in the repository tooling rather than in AWS. Two are already recorded

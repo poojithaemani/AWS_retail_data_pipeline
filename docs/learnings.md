@@ -550,3 +550,166 @@ Phase 2 taught is not about Glue: **an operation that reports success while
 doing nothing is more expensive than one that fails.** Four did here. The
 failing crawl in item 5 was diagnosed in under a minute because it said what
 was wrong.
+
+---
+
+## Phase 3 — Transformation (Glue PySpark ETL)
+
+**Built**
+
+- `src/retail_pipeline/transforms.py` — the seven-stage pipeline the brief
+  names, carrying its eleven transformations. Pure PySpark: nothing in it
+  imports `awsglue`, which is what makes every rule testable locally.
+- `scripts/glue_jobs/curated_sales.py` — the Glue entry point. Sequencing
+  only; no transformation logic, because anything in this file cannot be unit
+  tested.
+- `tests/test_transforms.py` — 11 tests against real Spark on small fixed
+  DataFrames.
+- `infrastructure/training/glue_job.tf` — one Glue job, two S3 objects, one
+  `archive_file`. No trigger, no workflow; orchestration is Phase 8.
+- `src/generate/orphan_delivery.py` — the failure fixture, built but **not yet
+  delivered**.
+- An `etl` collector in `capture_evidence.py`, added the day there was a run
+  to record.
+
+**Result:** `curated/sales/` — 10,000 rows over 30 Hive-partitioned Parquet
+files, `order_total` exact to the cent on every row, and revenue of
+**$8,850,092.78** confirmed by recomputing it from the raw CSVs independently
+of the job. Reconciliation balanced: `13,803 = 3,802 duplicates + 10,000 valid
++ 1 rejected`.
+
+**Concepts**
+
+- **Referential integrity is a decision, not a join type.** An order naming a
+  product that does not exist has no price. An inner join drops it silently and
+  revenue comes out low with nothing saying so; a left join keeps it with a
+  null price, which is worse — a manufactured record that reads as a completed
+  sale worth nothing. So orphans are rejected *before* any join, with a reason
+  attached, and counted. The inner joins in `enrich()` are then safe by
+  construction rather than by hope.
+- **"Remove duplicates" is really "decide which row is true."**
+  `dropDuplicates()` answers that with whichever row Spark read first, which is
+  non-deterministic across runs and partition counts — the same input can
+  produce different revenue twice. A `row_number()` window with an explicit
+  ordering makes the rule stateable and reviewable. Any rule would do; having
+  one is the point.
+- **Cleaning must never drop a row.** `clean()` normalises and leaves failures
+  as NULL; only `validate()` decides a row is unacceptable. Keeping "this value
+  was unparseable" separate from "this row is unusable" is how rows stop
+  disappearing without anyone deciding they should.
+- **Money is not a float.** `order_total` is `decimal(12,2)`. A revenue figure
+  that disagrees with itself by a fraction of a cent between runs is
+  unexplainable later.
+- **A reconciliation that only prints on success is not a check.** The identity
+  is enforced and the job fails on imbalance. That guard caught the one real
+  logic error in this phase — see below — and its failure was more valuable
+  than a pass would have been.
+
+**Broke — the deliberate defect**
+
+A delivery of 100 orders arrived referencing three products the product feed
+has never sent: `P900101`, `P900102`, `P900103`. Sixty rows join; forty do not.
+Nothing about the file is malformed — every field parses, every type is right,
+the CSV is valid. The rows are simply unjoinable, which is what makes it the
+right failure to rehearse: it is ordinary, and it breaks quietly.
+
+Delivered as an append to `raw/` (partition `year=2026/month=09/day=02`) and
+kept there permanently. Raw holds what the source actually sent; diverting a
+bad delivery to a fixture prefix would be pretending it did not happen.
+
+**The failure mode, measured rather than asserted.** Before running the real
+ETL, both naive implementations were quantified against the new partition:
+
+| implementation | rows kept | revenue | what is wrong |
+| --- | ---: | ---: | --- |
+| inner join | 60 | $61,002.61 | 40 rows vanish; no error, no record |
+| left join | 100 | $61,002.61 | 40 rows carry NULL price |
+| **this pipeline** | **60 curated + 40 quarantined** | **$61,002.61** | nothing lost, everything named |
+
+The revenue figure is *identical* in all three. That is the whole lesson: the
+number a naive pipeline reports is not wrong here — the accounting behind it
+is. An inner join understates row count silently, and a left join manufactures
+forty completed sales worth nothing. Only the third can answer "where did the
+missing forty go", and it answers with a queryable dataset rather than a
+number.
+
+**Result.** The job SUCCEEDED with the defect present, and every figure matched
+the prediction recorded before the run:
+
+    source 13,904 = duplicates 3,803 + valid 10,060 + rejected 41
+    rejected: 40 orphan_product_id + 1 malformed_order_date
+    curated 10,060 rows, revenue $8,911,095.39
+    no orphan product_id in curated; zero nulls in price or order_total
+
+Revenue moved $8,850,092.78 -> $8,911,095.39, exactly the $61,002.61 the 60
+joinable rows are worth, confirmed by recomputing from the raw CSVs.
+
+No fix was required, which is the point: the orphan decision was made in the
+design rather than discovered in production. Had `enrich()` relied on its join
+to enforce referential integrity, this delivery would have been the incident
+that taught it.
+
+**Broke — unplanned**
+
+Four unplanned failures also happened, and they are the more useful material
+because three share a shape.
+
+1. **Packaging — caught locally, before spending anything.** `archive_file`
+   zips the *contents* of `source_dir`, so pointing it at `src/retail_pipeline`
+   produced an archive whose root was `transforms.py` with no enclosing
+   package. Glue puts the zip on `sys.path`, so `from retail_pipeline import
+   transforms` would have failed at startup, after the run was billed. Found by
+   simulating Glue's import rather than reasoning about it.
+2. **Data Catalog access — one flag, 46 seconds of billing.** I had written in
+   a docstring that Glue 5.0 wires the Data Catalog in as the Hive metastore.
+   It does not. Without `--enable-glue-datacatalog`, `spark.sql()` resolves
+   against Spark's own in-memory catalog and every read fails with
+   `TABLE_OR_VIEW_NOT_FOUND`. The docstring asserted the opposite of the truth,
+   which is worse than saying nothing.
+3. **IAM on a key that is not a prefix.** Writing to `s3://…/curated/sales`
+   makes EMRFS materialise the parent directory as a zero-byte marker keyed
+   `curated_$folder$` — underscore, not slash — at the bucket root, which does
+   not match a `curated/*` grant. Same lesson as the Phase 2 `fixtures/`
+   denial: least privilege working correctly on a key pattern nobody
+   anticipated. Fixed by naming the five markers explicitly rather than
+   widening to `bucket/*`, which would have handed the ETL role write access to
+   `raw/` and undone the Phase 1 prefix split.
+4. **The reconciliation contract itself.** `source == valid + rejected` cannot
+   hold when deduplication removes rows between the two. See D22: duplicates
+   became their own term rather than being absorbed into the source count,
+   because "3,802 of 13,803 rows were duplicates" is a fact about the upstream
+   feed worth surfacing every run.
+
+**Fixed**
+
+The diagnosis worth keeping is for the 42-row discrepancy behind failure 4.
+Spark reported 13,803 source rows; every independent count said 13,761. The
+surplus was exactly the number of files.
+
+The decisive step was running the same question through a *different engine*:
+Athena reads the identical Glue Catalog table with the identical SerDe, and
+returned 13,761 with zero header rows. Two engines disagreeing on one table
+definition locates the fault in the reader — not in the data, not in the
+catalog, and not in the ETL. Spark does not honour `skip.header.line.count`;
+Athena does. Recorded in `docs/troubleshooting.md` and deliberately **not**
+fixed: the header rows are already collapsed by dedup and rejected with a
+reason, and forcing the property is a Phase 5 data-quality concern.
+
+That the outcome was harmless was luck, though. All 42 headers happen to share
+`order_id = 'order_id'`, so dedup collapsed them to one. A header whose values
+happened to parse would have produced a plausible bad row instead of an
+obviously rejected one.
+
+**The pattern across all four:** three of them — packaging, catalog access,
+reconciliation wiring — were in `scripts/glue_jobs/`, the thin layer between
+tested code and AWS. Not one was in the 300 lines of transformation logic the
+tests cover. The end-to-end test even passed `deduped.count()` as the source
+count, asserting the identity the module *could* satisfy rather than the one
+the job actually used. Tests protect the code they run; the wiring they cannot
+reach is where the failures live, and it earns review attention out of all
+proportion to its size.
+
+**Cost:** 1,238 DPU-seconds across five runs (~$0.15), plus ~$0.14 of crawler.
+Three of the five runs were failures — and at roughly two cents each, that is
+an entirely reasonable way to learn what the documentation did not say.
+

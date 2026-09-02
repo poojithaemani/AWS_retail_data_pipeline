@@ -1,0 +1,70 @@
+{
+  "jobs": [
+    {
+      "name": "de-training-curated-sales",
+      "glue_version": "5.0",
+      "worker_type": "G.1X",
+      "number_of_workers": 2,
+      "max_retries": 0,
+      "timeout_minutes": 30,
+      "script_location": "s3://de-training-749185461065/scripts/curated_sales.py",
+      "bookmarks": "job-bookmark-disable",
+      "glue_data_catalog_enabled": "true",
+      "runs": [
+        {
+          "id": "jr_df2808b5ed285bfce0be33cd319b4837b89c645eb1f17d6cf66bc03f4d28a151",
+          "state": "SUCCEEDED",
+          "started": "2026-09-01 21:15:57.325000-07:00",
+          "execution_seconds": 155,
+          "dpu_seconds": 310.0,
+          "error": null,
+          "reconciliation": {
+            "source_rows": 13803,
+            "duplicates_removed": 3802,
+            "deduplicated_rows": 10001,
+            "valid_rows": 10000,
+            "rejected_rows": 1,
+            "curated_rows": 10000,
+            "accounted_for": true,
+            "curated_matches_valid": true,
+            "every_source_row_explained": true,
+            "balanced": true
+          }
+        },
+        {
+          "id": "jr_5321217b8498a3d4fdc2e16cb72088db761f3355940ae1b0870cab41d813de6a",
+          "state": "FAILED",
+          "started": "2026-09-01 20:20:41.668000-07:00",
+          "execution_seconds": 142,
+          "dpu_seconds": 284.0,
+          "error": "RuntimeError: reconciliation did not balance: {'source_rows': 13803, 'valid_rows': 10000, 'rejected_rows': 1, 'curated_rows': 10000, 'accounted_for': False, 'curated_matches_valid': True, 'balanced': False}",
+          "reconciliation": {
+            "source_rows": 13803,
+            "valid_rows": 10000,
+            "rejected_rows": 1,
+            "curated_rows": 10000,
+            "accounted_for": false,
+            "curated_matches_valid": true,
+            "balanced": false
+          }
+        },
+        {
+          "id": "jr_0f9b3e2786dbc91857a3a421e0631bd7f2b7e849776486b7ef6de9cf5aff52f9",
+          "state": "FAILED",
+          "started": "2026-09-01 19:38:27.910000-07:00",
+          "execution_seconds": 118,
+          "dpu_seconds": 236.0,
+          "error": "An error occurred while calling o489.parquet. User: arn:aws:sts::749185461065:assumed-role/de-training-glue-role/GlueJobRunnerSession is not authorized to perform: s3:PutObject on resource: \"arn:aws:s3:::de-training-749185461065/curated_$folder$\" because no identity-based policy allows the s3:PutObj"
+        },
+        {
+          "id": "jr_9c76e737b55902ab24736d545423d4ab9fca1ab932004339c41c1d362f9e8510",
+          "state": "FAILED",
+          "started": "2026-09-01 19:24:22.487000-07:00",
+          "execution_seconds": 46,
+          "dpu_seconds": 92.0,
+          "error": "AnalysisException: [TABLE_OR_VIEW_NOT_FOUND] The table or view `training_db`.`customers_raw` cannot be found. Verify the spelling and correctness of the schema and catalog."
+        }
+      ]
+    }
+  ]
+}
