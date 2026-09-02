@@ -23,7 +23,14 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 pyspark = pytest.importorskip("pyspark", reason="pyspark not installed")
 
 from pyspark.sql import SparkSession  # noqa: E402
+from pyspark.sql.types import StructType  # noqa: E402
 
+try:  # pyspark >= 4 moved it; the deployed Glue runtime is 3.5
+    from pyspark.errors import AnalysisException  # noqa: E402
+except ImportError:  # pragma: no cover
+    from pyspark.sql.utils import AnalysisException  # type: ignore[no-redef]  # noqa: E402
+
+from retail_pipeline import config as C  # noqa: E402
 from retail_pipeline import transforms as T  # noqa: E402
 
 
@@ -277,3 +284,85 @@ def test_end_to_end_reconciliation_balances(spark, customers, products):
     assert report["deduplicated_rows"] == 4, "the duplicate collapsed before validation"
     assert report["valid_rows"] == 2
     assert report["rejected_rows"] == 2
+
+
+def test_reconcile_treats_a_zero_row_run_as_balanced():
+    """A bookmarked re-run over unchanged data must not look like a failure.
+
+    Once job bookmarks are on, the second run of an unchanged dataset reads
+    zero rows. Every term is zero, all three identities hold, and the job must
+    succeed - a pipeline that raises on "nothing new arrived" would page
+    someone every night for working correctly.
+    """
+    report = T.reconcile(0, 0, 0, 0, 0)
+    assert report["balanced"] is True
+    assert report["accounted_for"] is True
+    assert report["curated_matches_valid"] is True
+    assert report["every_source_row_explained"] is True
+    assert report["duplicates_removed"] == 0
+
+
+def test_a_bookmarked_read_with_no_new_files_has_no_columns(spark):
+    """What Glue actually hands back when a bookmark excludes every file.
+
+    This test exists because the previous version of it was wrong, and the
+    wrongness cost a job run. It built an empty DataFrame *with the orders
+    schema* and passed, which said nothing useful: the case that occurs in
+    production is `create_dynamic_frame.from_catalog(...).toDF()` returning a
+    frame with zero rows AND zero columns, because there were no files to infer
+    a schema from.
+
+    So `deduplicate()` does not merely return empty - it raises, because
+    `order_id` does not exist to window over. That is correct behaviour and is
+    asserted here deliberately: the transformations should not be made to
+    tolerate a schemaless frame. The entry script is what must notice there is
+    no new data and skip the pipeline entirely, and this test is the record of
+    why that guard is there.
+    """
+    schemaless = spark.createDataFrame([], StructType([]))
+
+    assert schemaless.columns == [], "a bookmarked no-op read carries no schema"
+    assert schemaless.count() == 0
+    assert not schemaless.columns, "the guard the entry script uses"
+
+    with pytest.raises(AnalysisException):
+        T.deduplicate(schemaless).count()
+
+
+# --------------------------------------------------------------------------
+# configuration
+# --------------------------------------------------------------------------
+
+
+def test_contract_supplies_the_values_that_were_hardcoded():
+    """The real config/pipeline.json must drive the job, not just exist.
+
+    It sat unread from Phase 0 to Phase 3 while the same values were repeated
+    as an f-string, two default arguments and four Terraform job arguments.
+    """
+    contract = C.load_contract(REPO_ROOT / "config" / "pipeline.json")
+
+    assert C.catalog_tables(contract) == {
+        "customers": "customers_raw",
+        "products": "products_raw",
+        "orders": "orders_raw",
+    }
+    output = C.curated_output(contract)
+    assert output["prefix"] == "curated/sales"
+    assert output["partition_by"] == ("year", "month", "day")
+    assert output["compression"] == "snappy"
+    assert C.quarantine_prefix(contract) == "quarantine/sales"
+
+
+def test_contract_falls_back_rather_than_crashing_on_an_older_file():
+    """A contract missing optional keys must degrade to the documented default.
+
+    The deployed contract and the deployed code are two artifacts that can be
+    updated independently, so the code cannot assume it is reading the version
+    it shipped with.
+    """
+    empty: dict = {}
+    assert C.catalog_tables(empty)["orders"] == "orders_raw"
+    assert C.curated_output(empty)["partition_by"] == ("year", "month", "day")
+    assert C.quarantine_prefix(empty) == "quarantine/sales"
+    assert C.valid_statuses(empty) == ()

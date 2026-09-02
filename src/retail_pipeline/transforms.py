@@ -329,6 +329,14 @@ def reconcile(
     the arithmetic work: "3,802 rows were duplicates" is a fact about the
     source worth reporting, not a discrepancy to absorb.
 
+    A run that processes nothing balances trivially - every term is zero, so
+    all three identities hold and `balanced` is True. That is not an accident
+    of the arithmetic; it is the required behaviour once job bookmarks are
+    enabled, because the second run over an unchanged dataset reads zero rows.
+    A pipeline that treated "nothing new arrived" as a failure would page
+    someone every night for working correctly. Asserted in the tests so a
+    future change here cannot quietly turn a no-op run into an alarm.
+
     Returned rather than asserted so the caller can record the numbers as
     evidence whether or not they balance. A reconciliation that only prints on
     success is not a check.

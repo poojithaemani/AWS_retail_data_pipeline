@@ -25,6 +25,7 @@ from awsglue.job import Job
 from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 
+from retail_pipeline import config as C
 from retail_pipeline import transforms as T
 
 REQUIRED = ["JOB_NAME", "lake_bucket"]
@@ -32,6 +33,10 @@ OPTIONAL = {
     "database": "training_db",
     "curated_prefix": "curated/sales",
     "rejected_prefix": "quarantine/sales",
+    # The data contract. An s3:// URI so the contract can be corrected and the
+    # job re-run without repackaging code - which is the point of driving
+    # behaviour from configuration rather than from constants.
+    "pipeline_config": "",
 }
 
 
@@ -56,16 +61,84 @@ def main() -> None:
 
     log = glue_context.get_logger()
     bucket = options["lake_bucket"]
-    curated_path = f"s3://{bucket}/{options['curated_prefix']}"
-    rejected_path = f"s3://{bucket}/{options['rejected_prefix']}"
+
+    # The contract wins where it speaks; the job arguments remain the fallback
+    # so a run without --pipeline_config behaves exactly as Phase 3 did.
+    contract = {}
+    if options.get("pipeline_config"):
+        contract = C.load_contract(options["pipeline_config"])
+        log.info(f"loaded data contract from {options['pipeline_config']}")
+    else:
+        log.info("no --pipeline_config given; using job-argument defaults")
+
+    tables = C.catalog_tables(contract) if contract else None
+    curated = C.curated_output(contract) if contract else {}
+
+    curated_prefix = curated.get("prefix") or options["curated_prefix"]
+    rejected_prefix = (
+        C.quarantine_prefix(contract) if contract else options["rejected_prefix"]
+    )
+    partition_by = curated.get("partition_by") or ("year", "month", "day")
+
+    # write_output writes snappy Parquet. If the contract ever says otherwise,
+    # say so loudly rather than writing something the contract does not
+    # describe - a silent disagreement between the two is worse than either.
+    compression = curated.get("compression", "snappy")
+    if compression != "snappy":
+        raise ValueError(
+            f"contract asks for {compression!r} compression but the pipeline writes snappy"
+        )
+
+    curated_path = f"s3://{bucket}/{curated_prefix}"
+    rejected_path = f"s3://{bucket}/{rejected_prefix}"
+    log.info(
+        f"output {curated_path} partitioned by {partition_by} ({compression}); "
+        f"rejects to {rejected_path}"
+    )
 
     # Replace only the partitions this run produces. Without this, a re-run of
     # one day would overwrite the whole curated prefix.
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
 
     log.info(f"reading catalog database {options['database']}")
-    tables = T.extract(spark, options["database"])
-    customers, products, orders = tables["customers"], tables["products"], tables["orders"]
+    names = tables or {n: f"{n}_raw" for n in ("customers", "products", "orders")}
+    database = options["database"]
+
+    # Dimensions: full read, every run, deliberately NOT bookmarked.
+    #
+    # A bookmark on customers or products would be actively harmful. The second
+    # run would read zero dimension rows, every order would fail its referential
+    # check, and the job would quarantine the entire tranche as orphans while
+    # reporting a balanced reconciliation and SUCCEEDED. Bookmarks belong on the
+    # fact table that grows, not on the lookups that do not.
+    customers = spark.sql(f"SELECT * FROM {database}.{names['customers']}")
+    products = spark.sql(f"SELECT * FROM {database}.{names['products']}")
+
+    # Orders: read through the Glue reader so bookmarks apply.
+    #
+    # This is the one place a DynamicFrame appears, and it exists for exactly
+    # one reason: job bookmarks are driven by `transformation_ctx` on Glue's
+    # own readers. A plain spark.sql() read bypasses the bookmark machinery
+    # entirely, so --job-bookmark-enable would silently do nothing - every run
+    # reprocessing everything while still succeeding, which is the worst shape
+    # a failure can take. Converted to a DataFrame on the next line, so
+    # transforms.py stays pure PySpark and every unit test stays valid.
+    orders = glue_context.create_dynamic_frame.from_catalog(
+        database=database,
+        table_name=names["orders"],
+        transformation_ctx="orders_source",
+    ).toDF()
+
+    # A bookmarked run with nothing new reads no files, so Glue has no schema
+    # to infer and hands back a frame with zero rows AND zero columns. The
+    # pipeline cannot run on that - deduplicate() windows over order_id, which
+    # does not exist - and it should not have to: "no new data" is a successful
+    # outcome, not an error. Commit the bookmark and finish.
+    if not orders.columns:
+        log.info("no new data since the last bookmark; nothing to process")
+        log.info(f"reconciliation: {T.reconcile(0, 0, 0, 0, 0)}")
+        job.commit()
+        return
 
     source_rows = orders.count()
     log.info(f"source orders: {source_rows}")
@@ -87,10 +160,17 @@ def main() -> None:
     rejected_rows = rejected.count()
 
     enriched = T.enrich(valid, customers, products)
-    curated = T.transform(enriched)
-    curated_rows = curated.count()
+    curated_frame = T.transform(enriched)
+    curated_rows = curated_frame.count()
 
-    T.write_output(curated, curated_path)
+    # A bookmarked re-run over unchanged data reads nothing. Writing an empty
+    # partitioned frame is harmless but pointless, and an empty write in the
+    # log is indistinguishable from a broken one - so say so explicitly.
+    if curated_rows:
+        T.write_output(curated_frame, curated_path, partition_by=tuple(partition_by))
+    else:
+        log.info("no new rows to write; curated left untouched")
+
     if rejected_rows:
         # Rejected rows are not partitioned by date: a row rejected *for* a
         # malformed date has no date to partition on.
