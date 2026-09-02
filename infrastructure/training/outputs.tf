@@ -22,3 +22,8 @@ output "crawler_name" {
   description = "Run with: aws glue start-crawler --name <this>"
   value       = aws_glue_crawler.raw.name
 }
+
+output "glue_job_name" {
+  description = "Run with: ./scripts/de.sh runjob"
+  value       = aws_glue_job.curated_sales.name
+}

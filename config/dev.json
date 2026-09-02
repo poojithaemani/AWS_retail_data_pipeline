@@ -6,6 +6,7 @@
     "number_of_workers": 2,
     "max_retries": 0,
     "timeout_minutes": 30,
-    "job_bookmarks": "job-bookmark-enable"
+    "job_bookmarks": "job-bookmark-disable",
+    "_job_bookmarks_note": "Disabled for Phase 3. With bookmarks on, a re-run processes zero rows and looks like a broken job, which costs debugging time and demonstrates nothing. Bookmarks are the Phase 4 exercise; they get enabled there, where 'the second run reprocessed 0 rows' is the result rather than a surprise."
   }
 }
