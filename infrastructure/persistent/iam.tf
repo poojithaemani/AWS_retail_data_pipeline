@@ -82,6 +82,28 @@ data "aws_iam_policy_document" "lake_access" {
       "${aws_s3_bucket.lake.arn}/quarantine/*",
       "${aws_s3_bucket.lake.arn}/athena-results/*",
       "${aws_s3_bucket.lake.arn}/temp/*",
+
+      # Hadoop directory markers, added in response to an actual denial - the
+      # same way fixtures/ was, and for the same reason: a key pattern nobody
+      # anticipated.
+      #
+      # Writing to s3://bucket/curated/sales makes EMRFS materialise the parent
+      # directory as a zero-byte object. The marker for a TOP-LEVEL prefix is
+      # keyed `curated_$folder$` at the bucket root - note the underscore, not
+      # a slash - so it does not match `curated/*` and the write fails with:
+      #
+      #     not authorized to perform: s3:PutObject on resource:
+      #     "<lake-bucket>/curated_$folder$"
+      #
+      # Nested markers such as `curated/sales_$folder$` already match the
+      # prefix grants above, so only these five are needed. Listed explicitly
+      # rather than widening to bucket/*, which would hand this role write
+      # access to raw/ and undo the Phase 1 prefix split.
+      "${aws_s3_bucket.lake.arn}/processed_$folder$",
+      "${aws_s3_bucket.lake.arn}/curated_$folder$",
+      "${aws_s3_bucket.lake.arn}/quarantine_$folder$",
+      "${aws_s3_bucket.lake.arn}/athena-results_$folder$",
+      "${aws_s3_bucket.lake.arn}/temp_$folder$",
     ]
   }
 
