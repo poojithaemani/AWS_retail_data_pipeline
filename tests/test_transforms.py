@@ -366,3 +366,115 @@ def test_contract_falls_back_rather_than_crashing_on_an_older_file():
     assert C.curated_output(empty)["partition_by"] == ("year", "month", "day")
     assert C.quarantine_prefix(empty) == "quarantine/sales"
     assert C.valid_statuses(empty) == ()
+
+
+# --------------------------------------------------------------------------
+# Phase 5 - data quality
+# --------------------------------------------------------------------------
+
+
+def test_non_positive_price_is_rejected_before_the_multiplication(spark, customers):
+    """The brief's "negative amount", located where it can actually be caught.
+
+    There is no source `amount` column here - money is derived, order_total =
+    quantity x price - so a negative total can only come from a negative price.
+    Rejecting at the price means the bad value never reaches the arithmetic and
+    never lands in curated as a plausible-looking negative sale.
+    """
+    priced = spark.createDataFrame(
+        [("P1", "Widget", "Home", 60.0), ("PNEG", "Broken", "Home", -100.0)],
+        ["product_id", "product_name", "category", "price"],
+    )
+    rows = [
+        ("O1", "C1", "P1", 2, "2026-08-19 10:00:00", "DELIVERED"),
+        ("O2", "C1", "PNEG", 3, "2026-08-19 11:00:00", "DELIVERED"),
+    ]
+    valid, rejected = T.validate(T.clean(orders_df(spark, rows)), customers, priced)
+
+    assert [r["order_id"] for r in valid.collect()] == ["O1"]
+    assert rejected.collect()[0]["rejection_reason"] == "non_positive_price"
+    assert valid.count() + rejected.count() == len(rows)
+
+
+def test_zero_price_is_rejected_like_zero_quantity(spark, customers):
+    """Consistency with non_positive_quantity, which is why it is <= not <.
+
+    A sale of something worth nothing is as suspect as a sale of nothing, and
+    treating the two bounds differently would be an inconsistency nobody could
+    explain later.
+    """
+    free = spark.createDataFrame(
+        [("PFREE", "Freebie", "Home", 0.0)], ["product_id", "product_name", "category", "price"]
+    )
+    rows = [("O1", "C1", "PFREE", 1, "2026-08-19 10:00:00", "DELIVERED")]
+    valid, rejected = T.validate(T.clean(orders_df(spark, rows)), customers, free)
+
+    assert valid.count() == 0
+    assert rejected.collect()[0]["rejection_reason"] == "non_positive_price"
+
+
+def test_orphan_product_still_reports_as_orphan_not_as_a_pricing_fault(spark, customers, products):
+    """Rule ordering, asserted rather than assumed.
+
+    An orphan has no price row at all, so its joined price is NULL. If the
+    monetary rule ran first the row would be blamed on pricing, and the
+    referential failure - the thing actually wrong with it - would never be
+    reported.
+    """
+    rows = [("O1", "C1", "P_MISSING", 1, "2026-08-19 10:00:00", "DELIVERED")]
+    _, rejected = T.validate(T.clean(orders_df(spark, rows)), customers, products)
+    assert rejected.collect()[0]["rejection_reason"] == "orphan_product_id"
+
+
+def test_the_briefs_five_row_fixture_end_to_end(spark):
+    """The brief's Day 5 example table, verbatim (p.12).
+
+        order_id | customer_id | quantity | amount
+        10001    | C001        | 2        | 120
+        10002    | NULL        | 1        | 50
+        10002    | C100        | 1        | 50
+        10004    | C200        | -2       | 80
+        10005    | C300        | 3        | -100
+
+    All four required detections in one pass: NULL customer id, duplicate
+    order id, negative quantity, negative amount. `amount` is expressed through
+    price, since this model derives money rather than reading it.
+
+    Note what the duplicate does here: `deduplicate()` collapses 10002 to one
+    row *before* validation, so it never appears as a rejection. That is
+    correct operational behaviour and also the reason the DQDL ruleset exists -
+    the pipeline handles duplicates, but only an explicit uniqueness check
+    reports how many there were.
+    """
+    known_customers = spark.createDataFrame(
+        [(c, "US", "2025-01-01") for c in ("C001", "C100", "C200", "C300")],
+        ["customer_id", "country", "created_date"],
+    )
+    priced = spark.createDataFrame(
+        [("P60", "Widget", "Home", 60.0), ("PNEG", "Broken", "Home", -100.0)],
+        ["product_id", "product_name", "category", "price"],
+    )
+    rows = [
+        ("10001", "C001", "P60", 2, "2026-08-19 10:00:00", "DELIVERED"),   # clean
+        ("10002", None, "P60", 1, "2026-08-19 10:00:00", "DELIVERED"),     # NULL customer
+        ("10002", "C100", "P60", 1, "2026-08-19 09:00:00", "DELIVERED"),   # duplicate id
+        ("10004", "C200", "P60", -2, "2026-08-19 10:00:00", "DELIVERED"),  # negative quantity
+        ("10005", "C300", "PNEG", 3, "2026-08-19 10:00:00", "DELIVERED"),  # negative amount
+    ]
+
+    source = orders_df(spark, rows)
+    deduped = T.deduplicate(source)
+    valid, rejected = T.validate(T.clean(deduped), known_customers, priced)
+
+    assert source.count() == 5
+    assert deduped.count() == 4, "the duplicate order_id collapsed"
+
+    reasons = sorted(r["rejection_reason"] for r in rejected.collect())
+    assert reasons == ["non_positive_price", "non_positive_quantity", "null_customer_id"]
+    assert [r["order_id"] for r in valid.collect()] == ["10001"]
+
+    report = T.reconcile(5, 4, valid.count(), rejected.count(), valid.count())
+    assert report["balanced"] is True
+    assert report["duplicates_removed"] == 1
+    assert report["every_source_row_explained"] is True
+

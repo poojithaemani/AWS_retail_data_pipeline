@@ -180,9 +180,27 @@ def validate(
     A row failing several rules is reported under the first that matches, in
     the order below. Deliberate: one row, one reason, so the counts per reason
     sum to the total and can be reconciled.
+
+    `non_positive_price` covers the brief's "negative amount" case. This model
+    has no source `amount` column - the money is derived, `order_total =
+    quantity x price` - so a non-positive total can only originate in a
+    non-positive price, and that is where the rule belongs. Catching it at the
+    price means the bad row never reaches the multiplication.
     """
     known_customers = customers.select(F.col("customer_id").alias("_ck")).distinct()
-    known_products = products.select(F.col("product_id").alias("_pk")).distinct()
+    # price travels with the key so the monetary rule below can see it. The
+    # order is a lookup, not a join into the output: both helper columns are
+    # dropped before the frames are returned.
+    #
+    # This assumes product_id is unique in products. If it ever carried two
+    # prices for one id, the distinct() would keep both rows and this left join
+    # would duplicate orders. Nothing silently absorbs that: the reconciliation
+    # identity would stop balancing and the job would fail, which is the
+    # behaviour wanted. Deduplicating here instead would mean picking one price
+    # arbitrarily - the same non-determinism deduplicate() exists to avoid.
+    known_products = products.select(
+        F.col("product_id").alias("_pk"), F.col("price").alias("_price")
+    ).distinct()
 
     annotated = (
         orders.join(known_customers, orders["customer_id"] == F.col("_ck"), "left")
@@ -196,9 +214,15 @@ def validate(
             .when(~F.col("status").isin(*VALID_STATUSES), F.lit("invalid_order_status"))
             .when(F.col("_ck").isNull(), F.lit("orphan_customer_id"))
             .when(F.col("_pk").isNull(), F.lit("orphan_product_id"))
+            # Money. Ordered last on purpose: it is the only rule that reads a
+            # joined column, so it must come after orphan_product_id, whose
+            # rows have a null price for a completely different reason. Getting
+            # this order wrong would report a missing product as a pricing
+            # fault.
+            .when(F.col("_price") <= 0, F.lit("non_positive_price"))
             .otherwise(F.lit(None)),
         )
-        .drop("_ck", "_pk")
+        .drop("_ck", "_pk", "_price")
     )
 
     valid = annotated.filter(F.col("rejection_reason").isNull()).drop("rejection_reason")
