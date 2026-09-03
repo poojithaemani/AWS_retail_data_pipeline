@@ -1,0 +1,205 @@
+{
+  "workgroup": "de-training-wg",
+  "queries": [
+    {
+      "query_id": "6743fcd7-6fbb-4b91-9a27-1c1ff894ee87",
+      "sql": "SELECT c.country, COUNT(DISTINCT s.customer_id) AS buyers, SUM(s.order_total) AS revenue FROM curated_sales s JOIN customers_raw c ON s.customer_id = c.customer_id GROUP BY c.country ORDER BY revenue DESC",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:19:29.915000-07:00",
+      "bytes_scanned": 220873,
+      "megabytes_scanned": 0.221,
+      "runtime_ms": 1202,
+      "estimated_usd": 1e-06
+    },
+    {
+      "query_id": "e52ec280-332c-4b4c-89f3-d2d7ffa3a5df",
+      "sql": "SELECT c.country, COUNT(DISTINCT s.customer_id) AS buyers, SUM(s.order_total) AS revenue FROM curated_sales s JOIN customers_raw c ON s.customer_id = c.customer_id GROUP BY c.country ORDER BY revenue DESC",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:09.104000-07:00",
+      "bytes_scanned": 220873,
+      "megabytes_scanned": 0.221,
+      "runtime_ms": 1443,
+      "estimated_usd": 1e-06
+    },
+    {
+      "query_id": "ae0123c5-2bd9-4321-b97f-128ba1dc4744",
+      "sql": "SELECT category, COUNT(*) AS orders, SUM(order_total) AS revenue, ROUND(AVG(order_total), 2) AS avg_order FROM curated_sales GROUP BY category ORDER BY revenue DESC",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:19:26.179000-07:00",
+      "bytes_scanned": 71433,
+      "megabytes_scanned": 0.071,
+      "runtime_ms": 911,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "8760fd50-e8c7-487c-976e-bad0d185f0c9",
+      "sql": "SELECT rejection_reason, COUNT(*) AS rows_rejected FROM quarantine_sales GROUP BY rejection_reason ORDER BY rows_rejected DESC",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:19:31.828000-07:00",
+      "bytes_scanned": 75,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 617,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "2a9422c9-3fff-4bea-842f-bc115e11780e",
+      "sql": "SELECT COUNT(*) AS rows_seen, MIN(order_id) AS lo, MAX(status) AS hi, MIN(product_name) AS a_product, MAX(country) AS a_country FROM curated_sales",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:04.772000-07:00",
+      "bytes_scanned": 158692,
+      "megabytes_scanned": 0.159,
+      "runtime_ms": 684,
+      "estimated_usd": 1e-06
+    },
+    {
+      "query_id": "4938e1ed-2e73-4146-8eb8-5d2950b6ee49",
+      "sql": "SELECT COUNT(*) AS orders, SUM(order_total) AS revenue FROM curated_sales WHERE year = '2026' AND month = '08' AND day = '19'",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:00.395000-07:00",
+      "bytes_scanned": 1196,
+      "megabytes_scanned": 0.001,
+      "runtime_ms": 614,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "d9a3d89e-62ae-45be-b731-dbf9b4517758",
+      "sql": "DROP TABLE IF EXISTS sales_by_category_ctas",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:19:33.254000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 271,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "c8ab3241-dc84-4d3b-a45f-85232bc6f2a0",
+      "sql": "SELECT category, SUM(revenue) AS revenue FROM sales_by_category_ctas GROUP BY category ORDER BY revenue DESC",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:15.195000-07:00",
+      "bytes_scanned": 1363,
+      "megabytes_scanned": 0.001,
+      "runtime_ms": 765,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "ff85e369-38e3-452c-baa7-3a73f033e406",
+      "sql": "SELECT COUNT(*) AS rows_seen, MIN(order_id) AS lo, MAX(status) AS hi, MIN(product_name) AS a_product, MAX(country) AS a_country FROM curated_sales",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:19:23.747000-07:00",
+      "bytes_scanned": 158692,
+      "megabytes_scanned": 0.159,
+      "runtime_ms": 1841,
+      "estimated_usd": 1e-06
+    },
+    {
+      "query_id": "24a9860a-6742-4c31-984f-8c212b355e48",
+      "sql": "CREATE EXTERNAL TABLE IF NOT EXISTS curated_sales ( order_id string, customer_id string, product_id string, product_name string, category string, country string, quantity int, price double, order_total decimal(12,2), status string, order_date timestamp ) PARTITIONED BY (year string, month string, day string) STORED AS PARQUET LOCATION 's3://de-training-749185461065/curated/sales/'",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:19:57.592000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 326,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "c8e2d48b-a957-47e8-bcab-863877ad262f",
+      "sql": "SELECT rejection_reason, COUNT(*) AS rows_rejected FROM quarantine_sales GROUP BY rejection_reason ORDER BY rows_rejected DESC",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:11.009000-07:00",
+      "bytes_scanned": 75,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 551,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "0e3e088e-4cc8-49b1-b318-a05350120955",
+      "sql": "DROP TABLE IF EXISTS sales_by_category_ctas",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:11.977000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 263,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "f88dcf93-03da-4241-8f90-ae1996ac3ed8",
+      "sql": "MSCK REPAIR TABLE curated_sales",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:19:58.374000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 962,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "46ccfc2e-66be-4635-a370-b25ce3dba39f",
+      "sql": "SELECT country, customer_id, revenue, rnk FROM ( SELECT country, customer_id, SUM(order_total) AS revenue, RANK() OVER (PARTITION BY country ORDER BY SUM(order_total) DESC) AS rnk FROM curated_sales GROUP BY country, customer_id ) WHERE rnk <= 3 ORDER BY country, rnk",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:07.672000-07:00",
+      "bytes_scanned": 125331,
+      "megabytes_scanned": 0.125,
+      "runtime_ms": 910,
+      "estimated_usd": 1e-06
+    },
+    {
+      "query_id": "bb24691d-569a-472a-8b6b-51cfc15a80e0",
+      "sql": "CREATE TABLE sales_by_category_ctas WITH ( format = 'PARQUET', write_compression = 'SNAPPY' ) AS SELECT category, country, COUNT(*) AS orders, SUM(order_total) AS revenue FROM curated_sales GROUP BY category, country",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:12.726000-07:00",
+      "bytes_scanned": 81719,
+      "megabytes_scanned": 0.082,
+      "runtime_ms": 1590,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "5061884f-3670-4ad3-bc5b-2067e116ba09",
+      "sql": "CREATE EXTERNAL TABLE IF NOT EXISTS quarantine_sales ( order_id string, customer_id string, product_id string, quantity int, order_date timestamp, status string, rejection_reason string ) STORED AS PARQUET LOCATION 's3://de-training-749185461065/quarantine/sales/'",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:19:59.631000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 279,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "4049fba6-b898-4dc1-b9bb-04f37b398c1b",
+      "sql": "SELECT SUM(order_total) AS revenue FROM curated_sales",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:03.328000-07:00",
+      "bytes_scanned": 59031,
+      "megabytes_scanned": 0.059,
+      "runtime_ms": 741,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "f4207f41-3d1c-44d2-80ca-d8d9dff97aed",
+      "sql": "SELECT category, COUNT(*) AS orders, SUM(order_total) AS revenue, ROUND(AVG(order_total), 2) AS avg_order FROM curated_sales GROUP BY category ORDER BY revenue DESC",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:06.199000-07:00",
+      "bytes_scanned": 71433,
+      "megabytes_scanned": 0.071,
+      "runtime_ms": 851,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "0cef9dc5-b0b0-4d97-85fe-17a3fda6073f",
+      "sql": "SELECT COUNT(*) AS orders, SUM(order_total) AS revenue FROM curated_sales WHERE date_format(order_date, '%Y-%m-%d') = '2026-08-19'",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:20:01.875000-07:00",
+      "bytes_scanned": 104411,
+      "megabytes_scanned": 0.104,
+      "runtime_ms": 856,
+      "estimated_usd": 1e-06
+    },
+    {
+      "query_id": "6e4b7439-6e99-46ec-828f-c5a1702a90d1",
+      "sql": "SELECT country, customer_id, revenue, rnk FROM ( SELECT country, customer_id, SUM(order_total) AS revenue, RANK() OVER (PARTITION BY country ORDER BY SUM(order_total) DESC) AS rnk FROM curated_sales GROUP BY country, customer_id ) WHERE rnk <= 3 ORDER BY country, rnk",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-02 18:19:27.988000-07:00",
+      "bytes_scanned": 125331,
+      "megabytes_scanned": 0.125,
+      "runtime_ms": 1092,
+      "estimated_usd": 1e-06
+    }
+  ]
+}

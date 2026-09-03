@@ -12,6 +12,8 @@
 #   ./scripts/de.sh crawl            run the Glue crawler and wait
 #   ./scripts/de.sh publish          crawler names -> required table names
 #   ./scripts/de.sh runjob           run the curated-sales Glue ETL job
+#   ./scripts/de.sh dq               evaluate the Glue Data Quality rulesets
+#   ./scripts/de.sh analytics        run the Phase 5 Athena queries
 #   ./scripts/de.sh orphans          Phase 3 orphan-FK delivery
 #   ./scripts/de.sh breakschema      Phase 2 schema-break delivery
 #   ./scripts/de.sh down             destroy the ephemeral training layer
@@ -177,6 +179,8 @@ cmd_breakschema() { $(python_bin) "${REPO_ROOT}/src/generate/break_schema.py" "$
 cmd_crawl()     { "${REPO_ROOT}/scripts/run_crawler.sh" "$@"; }
 cmd_publish()   { $(python_bin) "${REPO_ROOT}/scripts/publish_catalog.py" "$@"; }
 cmd_runjob()    { "${REPO_ROOT}/scripts/run_glue_job.sh" "$@"; }
+cmd_dq()        { $(python_bin) "${REPO_ROOT}/scripts/run_data_quality.py" "$@"; }
+cmd_analytics() { $(python_bin) "${REPO_ROOT}/scripts/athena_analytics.py" "$@"; }
 cmd_orphans()   { $(python_bin) "${REPO_ROOT}/src/generate/orphan_delivery.py" "$@"; }
 # Optional phase argument is recorded in docs/cost-log.md, so a row can be
 # traced back to the session that produced it. Without it the row reads "n/a",
@@ -281,6 +285,8 @@ main() {
     crawl)     cmd_crawl     "$@" ;;
     publish)   cmd_publish   "$@" ;;
     runjob)    cmd_runjob    "$@" ;;
+    dq)        cmd_dq        "$@" ;;
+    analytics) cmd_analytics "$@" ;;
     orphans)   cmd_orphans   "$@" ;;
     status)    cmd_status    "$@" ;;
     fmt)       cmd_fmt       "$@" ;;

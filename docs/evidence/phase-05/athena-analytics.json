@@ -1,0 +1,324 @@
+{
+  "database": "training_db",
+  "workgroup": "de-training-wg",
+  "statements": [
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 247,
+      "query_id": "24a9860a-6742-4c31-984f-8c212b355e48",
+      "name": "ddl_curated_sales",
+      "is_ddl": true
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 821,
+      "query_id": "f88dcf93-03da-4241-8f90-ae1996ac3ed8",
+      "name": "ddl_curated_partitions",
+      "is_ddl": true
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 207,
+      "query_id": "5061884f-3670-4ad3-bc5b-2067e116ba09",
+      "name": "ddl_quarantine_sales",
+      "is_ddl": true
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 1196,
+      "engine_ms": 424,
+      "query_id": "4938e1ed-2e73-4146-8eb8-5d2950b6ee49",
+      "name": "pruned_single_day",
+      "is_ddl": false,
+      "sample_rows": [
+        [
+          "orders",
+          "revenue"
+        ],
+        [
+          "249",
+          "246351.14"
+        ]
+      ]
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 104411,
+      "engine_ms": 714,
+      "query_id": "0cef9dc5-b0b0-4d97-85fe-17a3fda6073f",
+      "name": "full_scan_same_answer",
+      "is_ddl": false,
+      "sample_rows": [
+        [
+          "orders",
+          "revenue"
+        ],
+        [
+          "249",
+          "246351.14"
+        ]
+      ]
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 59031,
+      "engine_ms": 599,
+      "query_id": "4049fba6-b898-4dc1-b9bb-04f37b398c1b",
+      "name": "single_column_projection",
+      "is_ddl": false,
+      "sample_rows": [
+        [
+          "revenue"
+        ],
+        [
+          "10705326.72"
+        ]
+      ]
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 158692,
+      "engine_ms": 572,
+      "query_id": "2a9422c9-3fff-4bea-842f-bc115e11780e",
+      "name": "many_column_projection",
+      "is_ddl": false,
+      "sample_rows": [
+        [
+          "rows_seen",
+          "lo",
+          "hi",
+          "a_product",
+          "a_country"
+        ],
+        [
+          "12060",
+          "O00000001",
+          "SHIPPED",
+          "Adjustable Dash Cam 26",
+          "ZA"
+        ]
+      ]
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 71433,
+      "engine_ms": 706,
+      "query_id": "f4207f41-3d1c-44d2-80ca-d8d9dff97aed",
+      "name": "revenue_by_category",
+      "is_ddl": false,
+      "sample_rows": [
+        [
+          "category",
+          "orders",
+          "revenue",
+          "avg_order"
+        ],
+        [
+          "Electronics",
+          "1635",
+          "4531285.52",
+          "2771.43"
+        ],
+        [
+          "Automotive",
+          "1304",
+          "1864554.11",
+          "1429.87"
+        ],
+        [
+          "Office",
+          "1165",
+          "1038410.44",
+          "891.34"
+        ],
+        [
+          "Sports & Outdoors",
+          "852",
+          "1010731.36",
+          "1186.30"
+        ]
+      ]
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 125331,
+      "engine_ms": 786,
+      "query_id": "46ccfc2e-66be-4635-a370-b25ce3dba39f",
+      "name": "top_customers_by_country",
+      "is_ddl": false,
+      "sample_rows": [
+        [
+          "country",
+          "customer_id",
+          "revenue",
+          "rnk"
+        ],
+        [
+          "AU",
+          "C0000362",
+          "37593.00",
+          "1"
+        ],
+        [
+          "AU",
+          "C0000101",
+          "25829.26",
+          "2"
+        ],
+        [
+          "AU",
+          "C0000002",
+          "24882.60",
+          "3"
+        ],
+        [
+          "BR",
+          "C0000016",
+          "37361.88",
+          "1"
+        ]
+      ]
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 220873,
+      "engine_ms": 1311,
+      "query_id": "e52ec280-332c-4b4c-89f3-d2d7ffa3a5df",
+      "name": "join_curated_to_raw_customers",
+      "is_ddl": false,
+      "sample_rows": [
+        [
+          "country",
+          "buyers",
+          "revenue"
+        ],
+        [
+          "US",
+          "296",
+          "3130833.60"
+        ],
+        [
+          "IN",
+          "126",
+          "1241169.07"
+        ],
+        [
+          "GB",
+          "115",
+          "1224137.37"
+        ],
+        [
+          "BR",
+          "71",
+          "759536.51"
+        ]
+      ]
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 75,
+      "engine_ms": 401,
+      "query_id": "c8e2d48b-a957-47e8-bcab-863877ad262f",
+      "name": "quarantine_by_reason",
+      "is_ddl": false,
+      "sample_rows": [
+        [
+          "rejection_reason",
+          "rows_rejected"
+        ],
+        [
+          "orphan_product_id",
+          "40"
+        ]
+      ]
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 0,
+      "engine_ms": 143,
+      "query_id": "0e3e088e-4cc8-49b1-b318-a05350120955",
+      "name": "ctas_drop_if_exists",
+      "is_ddl": true
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 81719,
+      "engine_ms": 1453,
+      "query_id": "bb24691d-569a-472a-8b6b-51cfc15a80e0",
+      "name": "ctas_sales_by_category",
+      "is_ddl": false,
+      "sample_rows": []
+    },
+    {
+      "state": "SUCCEEDED",
+      "reason": null,
+      "bytes_scanned": 1363,
+      "engine_ms": 594,
+      "query_id": "c8ab3241-dc84-4d3b-a45f-85232bc6f2a0",
+      "name": "ctas_read_back",
+      "is_ddl": false,
+      "sample_rows": [
+        [
+          "category",
+          "revenue"
+        ],
+        [
+          "Electronics",
+          "4531285.52"
+        ],
+        [
+          "Automotive",
+          "1864554.11"
+        ],
+        [
+          "Office",
+          "1038410.44"
+        ],
+        [
+          "Sports & Outdoors",
+          "1010731.36"
+        ]
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "cheaper": "pruned_single_day",
+      "cheaper_bytes": 1196,
+      "costlier": "full_scan_same_answer",
+      "costlier_bytes": 104411,
+      "times_more_data": 87.3
+    },
+    {
+      "cheaper": "single_column_projection",
+      "cheaper_bytes": 59031,
+      "costlier": "many_column_projection",
+      "costlier_bytes": 158692,
+      "times_more_data": 2.7
+    },
+    {
+      "cheaper": "ctas_read_back",
+      "cheaper_bytes": 1363,
+      "costlier": "revenue_by_category",
+      "costlier_bytes": 71433,
+      "times_more_data": 52.4
+    }
+  ],
+  "failed": []
+}

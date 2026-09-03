@@ -855,3 +855,113 @@ failure three times bills three times and teaches nothing.
 
 **Cost:** 646 DPU-seconds across four runs (~$0.08), plus two crawls (~$0.14).
 
+---
+
+## Phase 5 — Data quality & quarantine
+
+**Built**
+
+Two Glue Data Quality rulesets in DQDL, one application-level validation rule,
+and fourteen Athena statements that measure what each query costs to answer.
+
+**Concepts**
+
+*Routing and measurement are different jobs.* `validate()` decides, row by row,
+what may enter curated and writes the rest to quarantine with a reason - it is a
+control. DQDL answers "how healthy is this dataset" against a declared standard
+- it is a measurement. Building the second did not make the first redundant, and
+the clearest evidence is the duplicate case below.
+
+*A quality rule should state the standard, not describe the data.*
+`Uniqueness "order_id" = 1.0` was written knowing it would fail. Tuning it down
+to 0.5 until it passed would have produced a green dashboard that reports
+nothing on the day duplicates double.
+
+**The four required detections**
+
+The brief names NULL customer id, duplicate order id, negative quantity and
+negative amount. Three are expressible on `orders_raw`; the fourth is not,
+because this model has no source `amount` column - money is derived,
+`order_total = quantity x price`. So it is measured on `products_raw` where the
+number actually lives, and enforced at the same place in `validate()`:
+
+    orders-quality     IsComplete "customer_id"        PASS
+                       Uniqueness "order_id" = 1.0     FAIL   0.5258
+                       ColumnValues "quantity" > 0     PASS    score 0.67
+    products-quality   ColumnValues "price" > 0        PASS    score 1.00
+
+**The failing rule is the finding.** `deduplicate()` already collapses duplicate
+order_ids before validation, so they never reach curated and never appear as
+rejections - correct behaviour, and completely silent. Only the uniqueness rule
+turns that silence into a number. A pipeline can handle a problem perfectly and
+still owe someone a measurement of it. That is the whole argument for keeping
+DQDL alongside a pipeline that already quarantines.
+
+The reported 0.5258 is Glue's own uniqueness ratio. The exact denominator it
+uses is not documented in the result, so it is recorded as observed rather than
+re-derived here; what it establishes is direction and magnitude - a large
+minority of order_ids are not unique, which matches the 3,761 duplicates the ETL
+collapses on a full run.
+
+**Athena: the cost of asking the same question badly**
+
+Every statement's bytes scanned were recorded. Three pairs ask an identical
+question two ways:
+
+| comparison | cheap | costly | ratio |
+| --- | ---: | ---: | ---: |
+| partition pruning | 0.001 MB | 0.100 MB | **87.3x** |
+| columnar projection | 0.056 MB | 0.151 MB | **2.7x** |
+| CTAS summary vs full scan | 0.001 MB | 0.068 MB | **52.4x** |
+
+The partition-pruning pair is the one worth internalising. Both queries return
+the same two numbers. The only difference is that one filters on the partition
+columns and the other on `date_format(order_date, ...)`, a derived value the
+engine cannot prune on. Same answer, 87 times the data. At this scale that is
+fractions of a cent; at a terabyte it is the difference between a query you run
+hourly and one you cannot afford to run at all.
+
+**Broke**
+
+*CTAS refused by our own governance control.* The first analytics run failed on
+the CTAS statement:
+
+    The Create Table As Select query failed because it was submitted with an
+    'external_location' property to an Athena Workgroup that enforces a
+    centralized output location for all queries.
+
+`enforce_workgroup_configuration = true` was set in Phase 0 so that no query can
+choose its own output path and escape the KMS-encrypted, cost-capped result
+location. CTAS's `external_location` is exactly that escape. The two are
+mutually exclusive and the control wins - the property was removed and the
+summary table now lands in the enforced location. A governance setting that only
+ever permits things is not a control; this is what it looks like when one binds.
+
+**Finding: the Athena DDL leaves tables the Phase 2 audit does not expect**
+
+`curated/` and `quarantine/` are not crawled - both folders are named `sales`
+and would collide on one table name - so they are declared with Athena DDL
+instead. That, plus the CTAS output, leaves `training_db` holding six tables
+where `publish_catalog.py` expects exactly three, and its audit fails on
+unexpected tables as well as missing ones.
+
+This self-resolves at teardown: the database is Terraform-owned and destroyed
+with the training layer, so the next session's crawl and publish see only the
+three raw tables. It matters only if `publish` is re-run before teardown.
+Recorded rather than fixed, because the fix would mean loosening a strict audit
+that has already caught real problems.
+
+**Deployment note, not architecture**
+
+A DQ ruleset is bound to a catalog table and AWS validates the table exists when
+the ruleset is created - but `orders_raw` and `products_raw` are produced by the
+crawler and `publish_catalog.py`, which run *after* the training layer is
+applied. `depends_on` cannot express a dependency on a resource Terraform does
+not own, so the rulesets sit behind `data_quality_enabled`, applied in a second
+pass after publish. The variable orders two applies; it adds no component and no
+runtime behaviour.
+
+**Cost:** 2 DQ evaluation runs, one no-op Glue run (121 DPU-seconds), one crawl,
+and 28 Athena statements across two attempts - all but one of them under a
+megabyte, so the 10 MB per-query minimum dominated the Athena bill entirely.
+

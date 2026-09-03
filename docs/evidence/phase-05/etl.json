@@ -1,0 +1,105 @@
+{
+  "jobs": [
+    {
+      "name": "de-training-curated-sales",
+      "glue_version": "5.0",
+      "worker_type": "G.1X",
+      "number_of_workers": 2,
+      "max_retries": 0,
+      "timeout_minutes": 30,
+      "script_location": "s3://de-training-749185461065/scripts/curated_sales.py",
+      "bookmarks": "job-bookmark-enable",
+      "glue_data_catalog_enabled": "true",
+      "runs": [
+        {
+          "id": "jr_1e9b2daf8fb7848265c69262d98cc3d31f713b77ee12c1bfc0be58ac5094209d",
+          "state": "SUCCEEDED",
+          "started": "2026-09-02 17:05:30.165000-07:00",
+          "execution_seconds": 60,
+          "dpu_seconds": 121.0,
+          "error": null,
+          "reconciliation": {
+            "source_rows": 0,
+            "duplicates_removed": 0,
+            "deduplicated_rows": 0,
+            "valid_rows": 0,
+            "rejected_rows": 0,
+            "curated_rows": 0,
+            "accounted_for": true,
+            "curated_matches_valid": true,
+            "every_source_row_explained": true,
+            "balanced": true
+          }
+        },
+        {
+          "id": "jr_83b48b4842f042adb12e8b9a71ee13373fb36ccffeaa0b078cc43616872d45fd",
+          "state": "SUCCEEDED",
+          "started": "2026-09-02 13:10:21.055000-07:00",
+          "execution_seconds": 60,
+          "dpu_seconds": 120.0,
+          "error": null,
+          "reconciliation": {
+            "source_rows": 0,
+            "duplicates_removed": 0,
+            "deduplicated_rows": 0,
+            "valid_rows": 0,
+            "rejected_rows": 0,
+            "curated_rows": 0,
+            "accounted_for": true,
+            "curated_matches_valid": true,
+            "every_source_row_explained": true,
+            "balanced": true
+          }
+        },
+        {
+          "id": "jr_ef8cfb84022a537906d0d4970de61689012fe227ea6c2fc881328ef3feae5af8",
+          "state": "FAILED",
+          "started": "2026-09-02 12:53:12.121000-07:00",
+          "execution_seconds": 61,
+          "dpu_seconds": 123.0,
+          "error": "AnalysisException: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column or function parameter with name `order_id` cannot be resolved. ;"
+        },
+        {
+          "id": "jr_cf5449de02dcaf1e195a86e604c33968ba91b09bb5c46e005f10c0f6f3dd551e",
+          "state": "SUCCEEDED",
+          "started": "2026-09-02 12:50:48.797000-07:00",
+          "execution_seconds": 97,
+          "dpu_seconds": 194.0,
+          "error": null,
+          "reconciliation": {
+            "source_rows": 2000,
+            "duplicates_removed": 0,
+            "deduplicated_rows": 2000,
+            "valid_rows": 2000,
+            "rejected_rows": 0,
+            "curated_rows": 2000,
+            "accounted_for": true,
+            "curated_matches_valid": true,
+            "every_source_row_explained": true,
+            "balanced": true
+          }
+        },
+        {
+          "id": "jr_adf5f63399e1a1ee6abf34cce2b3fc06ba2dcb1f29e47fdddfaddcb0593071cd",
+          "state": "SUCCEEDED",
+          "started": "2026-09-02 12:46:57.240000-07:00",
+          "execution_seconds": 104,
+          "dpu_seconds": 209.0,
+          "error": null,
+          "reconciliation": {
+            "source_rows": 13861,
+            "duplicates_removed": 3761,
+            "deduplicated_rows": 10100,
+            "valid_rows": 10060,
+            "rejected_rows": 40,
+            "curated_rows": 10060,
+            "accounted_for": true,
+            "curated_matches_valid": true,
+            "every_source_row_explained": true,
+            "balanced": true
+          }
+        }
+      ]
+    }
+  ]
+}

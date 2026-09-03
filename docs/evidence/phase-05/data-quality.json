@@ -1,0 +1,48 @@
+{
+  "rulesets": [
+    {
+      "ruleset": "de-training-orders-quality",
+      "table": "orders_raw",
+      "run_id": "dqrun-cf373edbda95bc2e85790bd01d1e02d8e8b5bddd",
+      "status": "SUCCEEDED",
+      "error": null,
+      "rules": [
+        {
+          "name": "Rule_1",
+          "result": "PASS",
+          "description": "IsComplete \"customer_id\"",
+          "message": null
+        },
+        {
+          "name": "Rule_2",
+          "result": "FAIL",
+          "description": "Uniqueness \"order_id\" = 1.0",
+          "message": "Value: 0.525754996532375 does not meet the constraint requirement!"
+        },
+        {
+          "name": "Rule_3",
+          "result": "PASS",
+          "description": "ColumnValues \"quantity\" > 0",
+          "message": null
+        }
+      ],
+      "score": 0.67
+    },
+    {
+      "ruleset": "de-training-products-quality",
+      "table": "products_raw",
+      "run_id": "dqrun-f45c4d71bc297f7b77826a05844487ac83a98ef5",
+      "status": "SUCCEEDED",
+      "error": null,
+      "rules": [
+        {
+          "name": "Rule_1",
+          "result": "PASS",
+          "description": "ColumnValues \"price\" > 0",
+          "message": null
+        }
+      ],
+      "score": 1.0
+    }
+  ]
+}
