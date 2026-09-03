@@ -40,3 +40,10 @@ variable "glue_database" {
   # value and exports it as TF_VAR_glue_database. Terraform failing here means the
   # environment was not sourced - run through scripts/de.sh.
 }
+
+variable "data_quality_enabled" {
+  description = "Create the Glue DQ rulesets. Off by default: a ruleset is bound to a catalog table, and orders_raw/products_raw only exist after crawl and publish have run. See data_quality.tf."
+  type        = bool
+  default     = false
+}
+
