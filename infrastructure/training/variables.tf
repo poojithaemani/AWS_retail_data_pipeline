@@ -47,3 +47,15 @@ variable "data_quality_enabled" {
   default     = false
 }
 
+variable "lf_grants_enabled" {
+  description = "Create the Lake Formation GOVERNANCE grants: the persona permission matrix, the Marketing column restriction and the LF-Tag demonstration. Separate from lf_pipeline_grants_enabled because those are needed for the pipeline to run at all, while these are the thing being demonstrated. See lakeformation.tf."
+  type        = bool
+  default     = false
+}
+
+variable "lf_pipeline_grants_enabled" {
+  description = "Create the Lake Formation grants the PIPELINE requires: the Glue role's DATA_LOCATION_ACCESS, its database permissions for the crawler and publish workflow, and SELECT on the raw tables it reads. Required once the S3 location is registered - IAM_ALLOWED_PRINCIPALS does not cover Lake Formation credential vending, which Gate 2 established by failing without these. See lakeformation.tf."
+  type        = bool
+  default     = false
+}
+
