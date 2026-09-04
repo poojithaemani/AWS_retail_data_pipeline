@@ -77,3 +77,10 @@ variable "raw_maintenance_principal_arns" {
   type        = list(string)
   default     = []
 }
+
+variable "lf_iam_allowed_principals" {
+  description = "Keep Lake Formation's IAM_ALLOWED_PRINCIPALS default. TRUE until the persona grants exist and the pipeline has been re-tested under them; flipping to false is the point of no return for Phase 6 and applies to every session afterwards. See lakeformation.tf."
+  type        = bool
+  default     = true
+}
+
