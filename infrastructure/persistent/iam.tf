@@ -169,6 +169,38 @@ data "aws_iam_policy_document" "lake_access" {
 
     resources = ["*"]
   }
+
+  # Asking Lake Formation for credentials. Added in Phase 6 after the ETL
+  # failed with the grants already in place.
+  #
+  # This is the IAM-versus-Lake-Formation distinction the brief spends Day 6 on,
+  # arriving as a real failure. The role held every Lake Formation grant it
+  # needed - SELECT and DESCRIBE on the raw tables, DATA_LOCATION_ACCESS on the
+  # bucket - and still could not read a row:
+  #
+  #     LFCredential fetch failed with status code: 400
+  #     simulate-principal-policy: lakeformation:GetDataAccess -> implicitDeny
+  #
+  # A Lake Formation grant says the principal MAY read the data. It does not
+  # confer the IAM right to ask for the credentials that make that possible.
+  # Both are required, and they are configured in different places by different
+  # mechanisms - which is exactly why the two systems are easy to confuse.
+  #
+  # Athena never hit this: it calls GetDataAccess as the service, so the
+  # caller's own policy is not consulted. Only a principal that requests
+  # credentials as itself - this Glue job - needs the action. Before the bucket
+  # was registered, nothing did, because reads went straight to S3.
+  #
+  # resources = ["*"] because the API takes no resource ARN. The access control
+  # lives in the Lake Formation grants, not here; this statement only permits
+  # the question to be asked. It mirrors the identical statement on
+  # persona_query, which the persona roles have had since Phase 0.
+  statement {
+    sid       = "LakeFormationCredentialVending"
+    effect    = "Allow"
+    actions   = ["lakeformation:GetDataAccess"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "lake_access" {
