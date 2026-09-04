@@ -6,8 +6,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 0,
-      "engine_ms": 247,
-      "query_id": "24a9860a-6742-4c31-984f-8c212b355e48",
+      "engine_ms": 233,
+      "query_id": "0e37d021-dede-47bd-bda3-2bc2d9159635",
       "name": "ddl_curated_sales",
       "is_ddl": true
     },
@@ -15,8 +15,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 0,
-      "engine_ms": 821,
-      "query_id": "f88dcf93-03da-4241-8f90-ae1996ac3ed8",
+      "engine_ms": 1183,
+      "query_id": "43c3e5ff-d448-4be9-a8c7-a88b4ae0bba4",
       "name": "ddl_curated_partitions",
       "is_ddl": true
     },
@@ -24,8 +24,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 0,
-      "engine_ms": 207,
-      "query_id": "5061884f-3670-4ad3-bc5b-2067e116ba09",
+      "engine_ms": 220,
+      "query_id": "f721667f-9d8e-4c6b-90c0-798b3953e92c",
       "name": "ddl_quarantine_sales",
       "is_ddl": true
     },
@@ -33,8 +33,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 1196,
-      "engine_ms": 424,
-      "query_id": "4938e1ed-2e73-4146-8eb8-5d2950b6ee49",
+      "engine_ms": 619,
+      "query_id": "261c3365-fc04-47af-86bb-286d2dde82f9",
       "name": "pruned_single_day",
       "is_ddl": false,
       "sample_rows": [
@@ -52,8 +52,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 104411,
-      "engine_ms": 714,
-      "query_id": "0cef9dc5-b0b0-4d97-85fe-17a3fda6073f",
+      "engine_ms": 809,
+      "query_id": "0a08b5f8-f888-4339-a524-fb432d7edeaf",
       "name": "full_scan_same_answer",
       "is_ddl": false,
       "sample_rows": [
@@ -71,8 +71,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 59031,
-      "engine_ms": 599,
-      "query_id": "4049fba6-b898-4dc1-b9bb-04f37b398c1b",
+      "engine_ms": 891,
+      "query_id": "f7cc12b8-fec3-4d81-9dd7-9cac9091160a",
       "name": "single_column_projection",
       "is_ddl": false,
       "sample_rows": [
@@ -88,8 +88,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 158692,
-      "engine_ms": 572,
-      "query_id": "2a9422c9-3fff-4bea-842f-bc115e11780e",
+      "engine_ms": 1166,
+      "query_id": "80a0c831-2889-4e35-b0db-4ae79f59713d",
       "name": "many_column_projection",
       "is_ddl": false,
       "sample_rows": [
@@ -113,8 +113,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 71433,
-      "engine_ms": 706,
-      "query_id": "f4207f41-3d1c-44d2-80ca-d8d9dff97aed",
+      "engine_ms": 999,
+      "query_id": "313fb2ef-a6b6-4198-8a9b-95d0a52d2c72",
       "name": "revenue_by_category",
       "is_ddl": false,
       "sample_rows": [
@@ -154,8 +154,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 125331,
-      "engine_ms": 786,
-      "query_id": "46ccfc2e-66be-4635-a370-b25ce3dba39f",
+      "engine_ms": 817,
+      "query_id": "40ab602c-1013-4791-b166-fcceec81be52",
       "name": "top_customers_by_country",
       "is_ddl": false,
       "sample_rows": [
@@ -195,8 +195,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 220873,
-      "engine_ms": 1311,
-      "query_id": "e52ec280-332c-4b4c-89f3-d2d7ffa3a5df",
+      "engine_ms": 1999,
+      "query_id": "071b573f-f1ad-442f-8a2f-b258ad0e2580",
       "name": "join_curated_to_raw_customers",
       "is_ddl": false,
       "sample_rows": [
@@ -231,8 +231,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 75,
-      "engine_ms": 401,
-      "query_id": "c8e2d48b-a957-47e8-bcab-863877ad262f",
+      "engine_ms": 771,
+      "query_id": "ede19832-0433-4d8d-84ae-26dbd834124d",
       "name": "quarantine_by_reason",
       "is_ddl": false,
       "sample_rows": [
@@ -250,8 +250,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 0,
-      "engine_ms": 143,
-      "query_id": "0e3e088e-4cc8-49b1-b318-a05350120955",
+      "engine_ms": 121,
+      "query_id": "cb0c3fe8-59da-4cba-93db-64d284dc4ec2",
       "name": "ctas_drop_if_exists",
       "is_ddl": true
     },
@@ -259,8 +259,8 @@
       "state": "SUCCEEDED",
       "reason": null,
       "bytes_scanned": 81719,
-      "engine_ms": 1453,
-      "query_id": "bb24691d-569a-472a-8b6b-51cfc15a80e0",
+      "engine_ms": 1908,
+      "query_id": "e08286a6-ea42-41d6-a450-b2afdf0a8344",
       "name": "ctas_sales_by_category",
       "is_ddl": false,
       "sample_rows": []
@@ -268,9 +268,9 @@
     {
       "state": "SUCCEEDED",
       "reason": null,
-      "bytes_scanned": 1363,
-      "engine_ms": 594,
-      "query_id": "c8ab3241-dc84-4d3b-a45f-85232bc6f2a0",
+      "bytes_scanned": 1293,
+      "engine_ms": 646,
+      "query_id": "a79b28b5-ec01-44f1-b7fb-1e1529414fb4",
       "name": "ctas_read_back",
       "is_ddl": false,
       "sample_rows": [
@@ -314,10 +314,10 @@
     },
     {
       "cheaper": "ctas_read_back",
-      "cheaper_bytes": 1363,
+      "cheaper_bytes": 1293,
       "costlier": "revenue_by_category",
       "costlier_bytes": 71433,
-      "times_more_data": 52.4
+      "times_more_data": 55.2
     }
   ],
   "failed": []
