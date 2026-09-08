@@ -80,8 +80,9 @@ CASES: list[tuple[str, str, bool, str]] = [
     (
         "marketing_analyst",
         "SELECT * FROM customers_raw LIMIT 5",
-        False,
-        "SELECT * must not become a way around the column grant",
+        True,
+        "SELECT * SUCCEEDS but Lake Formation resolves it to the granted columns only "
+        "- see check_star_hides_email(), which asserts what actually comes back",
     ),
     (
         "marketing_analyst",
@@ -126,6 +127,56 @@ def run(athena: Any, sql: str, database: str, workgroup: str) -> tuple[str, str 
         if state in ("SUCCEEDED", "FAILED", "CANCELLED"):
             return state, detail["Status"].get("StateChangeReason")
         time.sleep(0.5)
+
+
+def check_star_hides_email(session: Any, database: str, workgroup: str, region: str) -> dict:
+    """`SELECT *` must return the granted columns and nothing else.
+
+    This is the assertion the CASES table cannot make. A column-level grant does
+    not make `SELECT *` fail - Lake Formation resolves the star against what the
+    principal may see and returns those columns. The query succeeding is
+    therefore the CORRECT outcome, and treating it as a denial (as an earlier
+    version of this script did) reports a false alarm on a permission model that
+    is working.
+
+    What matters is not the query's status but its shape: the columns that come
+    back. If `email` ever appears here, the column grant has stopped being
+    enforced, and that is a real finding regardless of what the status says.
+    """
+    athena = session.client("athena", region_name=region)
+    sql = "SELECT * FROM customers_raw LIMIT 3"
+    state, reason = run(athena, sql, database, workgroup)
+    result: dict[str, Any] = {
+        "check": "select_star_returns_only_granted_columns",
+        "sql": sql,
+        "state": state,
+        "reason": reason,
+    }
+    if state != "SUCCEEDED":
+        result["as_expected"] = False
+        return result
+
+    # The query id is needed to read the column metadata back.
+    qid = athena.start_query_execution(
+        QueryString=sql,
+        QueryExecutionContext={"Database": database},
+        WorkGroup=workgroup,
+    )["QueryExecutionId"]
+    while True:
+        detail = athena.get_query_execution(QueryExecutionId=qid)["QueryExecution"]
+        if detail["Status"]["State"] in ("SUCCEEDED", "FAILED", "CANCELLED"):
+            break
+        time.sleep(0.5)
+
+    meta = athena.get_query_results(QueryExecutionId=qid)["ResultSet"]["ResultSetMetadata"]
+    columns = [c["Name"] for c in meta["ColumnInfo"]]
+    granted = {"customer_id", "country"}
+    leaked = [c for c in columns if c not in granted]
+
+    result["columns_returned"] = columns
+    result["leaked_columns"] = leaked
+    result["as_expected"] = not leaked
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -189,6 +240,16 @@ def main(argv: list[str] | None = None) -> int:
                 "why": why,
             }
         )
+
+    star = None
+    if "marketing_analyst" in sessions:
+        star = check_star_hides_email(sessions["marketing_analyst"], database, workgroup, region)
+        mark = "ok  " if star["as_expected"] else "WRONG"
+        print()
+        print(f"  {mark} [shape] marketing_analyst  SELECT * returns {star.get('columns_returned')}")
+        if star.get("leaked_columns"):
+            print(f"        ^^ LEAKED: {star['leaked_columns']} - column grant not enforced")
+        results.append({**star, "persona": "marketing_analyst", "expected": "granted columns only"})
 
     wrong = [r for r in results if not r["as_expected"]]
     leaks = [r for r in wrong if r["expected"] == "deny"]
