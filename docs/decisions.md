@@ -589,3 +589,52 @@ a balanced reconciliation and SUCCEEDED. The reconciliation identity cannot
 catch that: nothing is lost, it is merely all in the wrong bucket. Bookmarks
 belong on the fact table that grows, never on the lookups.
 
+---
+
+## D24 — Lake Formation grants are split from the pipeline's own access
+
+`lf_pipeline_grants_enabled` covers the Glue role's location, database and table
+grants. `lf_grants_enabled` covers the persona matrix, the column restriction
+and the LF-Tag. Two variables for what is, on paper, one feature.
+
+They were briefly merged, on the reasoning that the gate boundary should match
+the file boundary and IAM_ALLOWED_PRINCIPALS would carry the pipeline until the
+governance work was ready. Gate 2 disproved the premise: with the location
+registered and the fallback fully enabled, the ETL still could not read a row.
+The Glue grants are not part of the demonstration - they are a prerequisite for
+the pipeline running at all once the bucket is governed.
+
+Keeping them separate also preserves the property that made this phase
+debuggable: one change per gate. Applying the Glue grants alongside the first
+post-registration pipeline run would have tested registration and grants
+together, and a passing run would not have said which of the two carried it.
+
+**The related decision: personas get named-resource grants, not LF-Tags.**
+The matrix is three roles over four tables. Naming them says exactly what is
+intended and is auditable by reading it. Tag-based access control is the model
+that scales - tag the data once, grant against the tag - and it is demonstrated
+on one table so the mechanism is evidenced, but building the authorisation model
+out of tags at this size would add indirection without removing a decision.
+
+## D25 — IAM_ALLOWED_PRINCIPALS is removed, permanently and deliberately
+
+The fallback is Lake Formation's backwards-compatibility hatch: while it is
+present, any principal whose IAM policy permits an action is allowed, and every
+LF grant is advisory. A permission model that cannot refuse anything is not a
+permission model, so the phase is only meaningful with it gone.
+
+Two consequences worth stating plainly, because both outlive this phase:
+
+- **The negative tests only mean something afterwards.** A control run with the
+  fallback still enabled scored 7/11, with all four denials wrongly succeeding.
+  That run was not wasted - it is what proves the later denials come from the
+  column grant rather than from something incidental.
+- **It changes the baseline for every future session.** The setting is
+  account-level and survives teardown. From here on, the Glue role's LF grants
+  are load-bearing: miss one and the crawler fails with a permissions error on
+  unchanged code.
+
+The alternative - leaving the fallback on and demonstrating the grants
+theoretically - would have produced a governance phase that proved nothing and
+left a trap for whoever removed it later.
+

@@ -317,6 +317,47 @@ chose the DynamicFrame reader for its header handling.
 
 ---
 
+## Phase 6 — governance (Lake Formation)
+
+### publish_catalog.py writes its audit into phase-02 whatever phase it runs in
+
+| | |
+| --- | --- |
+| Phase | 06 |
+| Component | scripts/publish_catalog.py / evidence |
+| Deliberate? | no (real) |
+| Status | worked around, not fixed |
+
+**Symptom** — after a Phase 6 `publish`, `git status` showed
+`docs/evidence/phase-02/catalog-audit.json` modified, flipping from `"ok": true`
+to `"ok": false`. Committing it would have recorded Phase 2 as having failed its
+own audit, months after it passed.
+
+**Diagnosis** — the audit content was correct for *now*: `missing: []`, and
+`unexpected: [curated_sales, quarantine_sales, sales_by_category_ctas]`, the
+three tables the Phase 5 Athena DDL creates. The problem was the destination,
+not the verdict. `scripts/publish_catalog.py:315` hardcodes:
+
+    out = REPO_ROOT / "docs" / "evidence" / "phase-02"
+
+**Cause** — the script was written in Phase 2, when it only ever ran in Phase 2.
+It has been run in every phase since, and each run silently rewrites Phase 2's
+evidence with the current catalog's verdict.
+
+**Fix** — the Phase 2 file was restored with `git checkout`, and the Phase 6
+audit written to `docs/evidence/phase-06/catalog-audit.json` with a note
+explaining why it fails. The script itself was not changed: it should take the
+phase as an argument the way `capture_evidence.py` does, but doing that at the
+close of Phase 6 means touching a Phase 2 artifact to fix a reporting wart, and
+the phase already carried more unplanned changes than intended.
+
+**Prevention** — none automated yet. A hygiene test asserting that evidence
+under `docs/evidence/phase-NN/` is only written by phase NN would catch it, and
+is worth adding when the script is fixed properly. Until then, check
+`git status` for modified evidence outside the current phase before committing.
+
+---
+
 ## Local development
 
 Issues in the repository tooling rather than in AWS. Two are already recorded

@@ -965,3 +965,133 @@ runtime behaviour.
 and 28 Athena statements across two attempts - all but one of them under a
 megabyte, so the 10 MB per-query minimum dominated the Athena bill entirely.
 
+---
+
+## Phase 6 — Governance (Lake Formation)
+
+**Built**
+
+The brief's three personas over the Lake Formation permission matrix (p.15),
+verified positively and negatively through Athena, plus one LF-Tag to
+demonstrate tag-based access control.
+
+    DataEngineerRole      customers, products, orders   + quarantine via LF-Tag
+    FinanceAnalystRole    sales, orders
+    MarketingAnalystRole  customers: customer_id, country - NOT email
+
+Final verification: **12/12 cases behaved as specified.**
+
+**Concepts**
+
+*Registration changes how data is read, not only who may read it.* Before it,
+IAM alone answers "may this principal read this table" and every reader reaches
+S3 directly. After it, Lake Formation vends credentials, and a principal with
+flawless IAM policies is refused unless it also holds an LF grant. This is not a
+subtlety - it broke both Athena and the ETL within minutes of registering, while
+the IAM fallback was still fully enabled.
+
+*IAM_ALLOWED_PRINCIPALS does not protect the vended path.* The assumption the
+whole gate sequence was built on - that the fallback would carry the pipeline
+until the persona work was done - was wrong, and Gate 2 disproved it. The
+fallback governs authorization for principals reading S3 *directly*, which is
+why the crawler and publish kept working. It does nothing for a service
+requesting credentials *through* Lake Formation.
+
+*A grant is permission to do something; an IAM action is permission to ask.*
+The sharpest lesson of the phase. The Glue role held every Lake Formation grant
+it needed - SELECT and DESCRIBE on the raw tables, DATA_LOCATION_ACCESS on the
+bucket - and still could not read a row:
+
+    LFCredential fetch failed with status code: 400
+    simulate-principal-policy: lakeformation:GetDataAccess -> implicitDeny
+
+Both halves are required and they live in different systems, configured by
+different mechanisms. Athena never hit this because it calls GetDataAccess as
+the *service*, so the caller's own policy is never consulted; only a principal
+requesting credentials as itself needs the action. Phase 0 had put it on the
+persona roles and nobody thought to put it on the Glue role, because before
+registration nothing needed it.
+
+*Column grants name what is permitted, not what is excluded.* The Marketing
+grant lists `customer_id, country` rather than excluding `email`. A column added
+to customers_raw tomorrow is inaccessible to that role by default, which is the
+correct failure direction. An exclusion list would expose it silently.
+
+**Broke — three access failures, each found only by failing**
+
+    1. Athena     PERMISSION_DENIED ... AWSServiceRoleForLakeFormationDataAccess
+                  is not authorized to perform: kms:Decrypt
+    2. Glue ETL   LFCredential fetch failed with status code: 400   (no LF grant)
+    3. Glue ETL   LFCredential fetch failed with status code: 400   (no IAM action)
+
+Failures 2 and 3 produce the *identical* error message and required completely
+different fixes. That is worth remembering: the message names the symptom, and
+the only way to tell them apart was `simulate-principal-policy`.
+
+The KMS one is the tidiest illustration of the vending model. The key policy
+already allowed `athena.amazonaws.com`, and that bought nothing - the request
+now arrives as the service-linked ROLE, a different principal entirely.
+
+**Broke — a Terraform trap this project has hit before**
+
+`lf_iam_allowed_principals = false` did nothing. The dynamic block emitted zero
+blocks when disabled, the provider read that as "not managed" rather than "set
+to empty", and the plan returned `No changes` while the fallback stayed live on
+all eight resources.
+
+This is the same trap Phase 2 hit with the crawler's classifiers, already
+recorded in CLAUDE.md as *omission is not the same as empty*. Knowing about a
+trap in the abstract did not prevent walking into it in a new shape. The fix is
+to always describe the block and vary its content - Terraform can only remove a
+value it is still describing. Empty `principal` fails provider validation, so
+the working form keeps the principal and empties its permissions.
+
+Removing the fallback also turned out to be two operations, not one. Clearing
+the account defaults only affects tables created afterwards; the eight existing
+resources kept their own IAM_ALLOWED_PRINCIPALS grant and had to be revoked
+individually. The `default` database was left alone - it is not this project's.
+
+**A test that reported a false alarm**
+
+`SELECT *` as MarketingAnalystRole was asserted to be denied. It succeeds, and
+that is correct: Lake Formation resolves the star against what the principal may
+see and returns `['customer_id', 'country']`. The original assertion would have
+reported a permission failure on a model that was working perfectly.
+
+The test was changed, not the model - but "the query succeeded" is a weak thing
+to assert, so it now checks the *shape* of the result and fails if any column
+outside the grant appears. That is a stronger check than the one it replaced,
+and it is the second time this phase that an assertion was measuring the wrong
+thing.
+
+**The drift, and what it was**
+
+From the moment the Glue grants were created, `terraform plan` wanted to replace
+them - eventually 10 to add and 9 to destroy, every table grant affected. The
+grants were live and correct throughout; AWS simply records a `SELECT+DESCRIBE`
+table grant as two entries, and the `ALL` from IAM_ALLOWED_PRINCIPALS on the
+same resource folded into the provider's read.
+
+Deliberately not chased. The hypothesis was that removing the fallback would
+resolve it, and it was tested rather than assumed by capturing a plan either
+side of step 11:
+
+    before   Plan: 10 to add, 0 to change, 9 to destroy
+    after    Plan:  1 to add, 0 to change, 0 to destroy
+
+The one remaining is `table_with_columns`, which the provider cannot round-trip.
+The grant exists and is correct; the plan is wrong about it. Documented and left.
+
+**Cost:** eight Glue job runs across the phase (~1,400 DPU-seconds, ~$0.17),
+three crawls, and roughly sixty small Athena queries across the control and
+verification passes. Lake Formation itself is free.
+
+**What survives teardown, and why it matters**
+
+The data lake settings, the registered location and the service-linked role are
+account-level and outlive the training layer. The removal of
+IAM_ALLOWED_PRINCIPALS is therefore permanent: from now on every session's new
+tables have no IAM fallback, and the Glue role's LF grants are load-bearing for
+Phases 7-9. If one is ever missed, the crawler fails with a permissions error on
+code that did not change - which is exactly how this phase started.
+
