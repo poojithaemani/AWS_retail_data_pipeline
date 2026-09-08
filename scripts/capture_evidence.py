@@ -364,12 +364,110 @@ def _reconciliation_from_logs(logs: Any, run_id: str) -> dict[str, Any] | None:
     return None
 
 
+def collect_governance(session: boto3.Session) -> dict[str, Any]:
+    """Lake Formation posture, added in Phase 6.
+
+    Who administers the lake, which location it governs, what the catalog does
+    by default, and every grant in force. The grants are the part that has to be
+    captured while the layer is up: they reference tables that are destroyed with
+    the training layer, so after teardown there is no way to show what the
+    permission model actually was.
+
+    The default permissions matter as much as the grants. A reader looking at
+    this later needs to know whether IAM_ALLOWED_PRINCIPALS was still in place,
+    because with it enabled every grant below is advisory - Lake Formation defers
+    to IAM and refuses nothing. The same grant list means opposite things either
+    side of that flag.
+    """
+    lf = session.client("lakeformation", region_name=REGION)
+    out: dict[str, Any] = {}
+
+    try:
+        settings = lf.get_data_lake_settings()["DataLakeSettings"]
+        out["admins"] = [
+            a["DataLakePrincipalIdentifier"] for a in settings.get("DataLakeAdmins", [])
+        ]
+        # Empty permissions means the fallback has been removed - the flag that
+        # decides whether any of the grants below actually bind.
+        out["create_database_default_permissions"] = [
+            {
+                "principal": d["Principal"]["DataLakePrincipalIdentifier"],
+                "permissions": d.get("Permissions", []),
+            }
+            for d in settings.get("CreateDatabaseDefaultPermissions", [])
+        ]
+        out["create_table_default_permissions"] = [
+            {
+                "principal": d["Principal"]["DataLakePrincipalIdentifier"],
+                "permissions": d.get("Permissions", []),
+            }
+            for d in settings.get("CreateTableDefaultPermissions", [])
+        ]
+        out["iam_allowed_principals_active"] = any(
+            d["permissions"]
+            for d in out["create_table_default_permissions"]
+            + out["create_database_default_permissions"]
+        )
+    except AWS_ERRORS as exc:
+        out["settings_error"] = str(exc)[:200]
+
+    try:
+        out["registered_locations"] = [
+            {"arn": r.get("ResourceArn"), "role": r.get("RoleArn")}
+            for r in lf.list_resources().get("ResourceInfoList", [])
+        ]
+    except AWS_ERRORS as exc:
+        out["registered_locations"] = {"error": str(exc)[:200]}
+
+    try:
+        out["lf_tags"] = [
+            {"key": t.get("TagKey"), "values": t.get("TagValues")}
+            for t in lf.list_lf_tags().get("LFTags", [])
+        ]
+    except AWS_ERRORS as exc:
+        out["lf_tags"] = {"error": str(exc)[:200]}
+
+    # list_permissions has no boto3 paginator - a manual NextToken loop is
+    # required. Noted in CLAUDE.md; it is easy to silently capture one page.
+    grants: list[dict[str, Any]] = []
+    try:
+        token = None
+        while True:
+            page = lf.list_permissions(**({"NextToken": token} if token else {}))
+            for item in page.get("PrincipalResourcePermissions", []):
+                resource = item.get("Resource", {})
+                kind = next(iter(resource), "?")
+                body = resource.get(kind, {})
+                grants.append(
+                    {
+                        "principal": item["Principal"]["DataLakePrincipalIdentifier"],
+                        "resource_type": kind,
+                        "database": body.get("DatabaseName") or body.get("Name"),
+                        "table": body.get("Name") if kind != "Database" else None,
+                        # The whole point of the Marketing grant: which columns.
+                        "columns": body.get("ColumnNames"),
+                        "tag_expression": body.get("Expression"),
+                        "permissions": sorted(item.get("Permissions", [])),
+                    }
+                )
+            token = page.get("NextToken")
+            if not token:
+                break
+        out["grants"] = grants
+        out["grant_count"] = len(grants)
+    except AWS_ERRORS as exc:
+        out["grants"] = {"error": str(exc)[:200]}
+
+    return out
+
+
 COLLECTORS: dict[str, Callable[[boto3.Session], dict[str, Any]]] = {
     "context": collect_context,
     "lake": collect_lake,
     "athena": collect_athena,
     "catalog": collect_catalog,
     "etl": collect_etl,
+    "governance": collect_governance,
 }
 
 # Deliberately not built yet: data_quality, orchestration, warehouse,

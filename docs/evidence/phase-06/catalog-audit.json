@@ -1,0 +1,16 @@
+{
+  "_note": "Audit result from the Phase 6 publish run. It FAILS, and the failure is expected: curated_sales, quarantine_sales and sales_by_category_ctas are created by the Phase 5 Athena DDL, and publish_catalog.py asserts training_db holds exactly the three graded raw tables. Nothing is missing and every required table is correct. Recorded here rather than left in docs/evidence/phase-02/, which publish_catalog.py overwrites regardless of the phase it runs in - a Phase 6 run should not rewrite Phase 2 evidence.",
+  "database": "training_db",
+  "required": [
+    "customers_raw",
+    "orders_raw",
+    "products_raw"
+  ],
+  "missing": [],
+  "unexpected": [
+    "curated_sales",
+    "quarantine_sales",
+    "sales_by_category_ctas"
+  ],
+  "ok": false
+}

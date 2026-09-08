@@ -1,0 +1,519 @@
+{
+  "admins": [
+    "arn:aws:iam::749185461065:user/dev-user"
+  ],
+  "create_database_default_permissions": [
+    {
+      "principal": "IAM_ALLOWED_PRINCIPALS",
+      "permissions": []
+    }
+  ],
+  "create_table_default_permissions": [
+    {
+      "principal": "IAM_ALLOWED_PRINCIPALS",
+      "permissions": []
+    }
+  ],
+  "iam_allowed_principals_active": false,
+  "registered_locations": [
+    {
+      "arn": "arn:aws:s3:::de-training-749185461065",
+      "role": "arn:aws:iam::749185461065:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess"
+    }
+  ],
+  "lf_tags": [
+    {
+      "key": "sensitivity",
+      "values": [
+        "internal",
+        "public",
+        "restricted"
+      ]
+    }
+  ],
+  "grants": [
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Database",
+      "database": "default",
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "CREATE_TABLE",
+        "DESCRIBE",
+        "DROP"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Database",
+      "database": "training_db",
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALTER",
+        "CREATE_TABLE",
+        "DESCRIBE",
+        "DROP"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Database",
+      "database": "training_db",
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "CREATE_TABLE",
+        "DESCRIBE",
+        "DROP"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "DataLocation",
+      "database": null,
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DATA_LOCATION_ACCESS"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/FinanceAnalystRole",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/FinanceAnalystRole",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/DataEngineerRole",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/DataEngineerRole",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "sales_by_category_ctas",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "sales_by_category_ctas",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "quarantine_sales",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "quarantine_sales",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/DataEngineerRole",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/DataEngineerRole",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/FinanceAnalystRole",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "curated_sales",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/FinanceAnalystRole",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "curated_sales",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "curated_sales",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "curated_sales",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/DataEngineerRole",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/DataEngineerRole",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/MarketingAnalystRole",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": [
+        "country",
+        "customer_id"
+      ],
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "LFTag",
+      "database": null,
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALTER",
+        "DROP"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "LFTag",
+      "database": null,
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "LFTag",
+      "database": null,
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ASSOCIATE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "LFTag",
+      "database": null,
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "GRANT_WITH_LF_TAG_EXPRESSION"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/DataEngineerRole",
+      "resource_type": "LFTagPolicy",
+      "database": null,
+      "table": null,
+      "columns": null,
+      "tag_expression": [
+        {
+          "TagKey": "sensitivity",
+          "TagValues": [
+            "restricted"
+          ]
+        }
+      ],
+      "permissions": [
+        "DESCRIBE",
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "IAM_ALLOWED_PRINCIPALS",
+      "resource_type": "Database",
+      "database": "default",
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL"
+      ]
+    }
+  ],
+  "grant_count": 39
+}

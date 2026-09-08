@@ -1,0 +1,118 @@
+{
+  "database": "training_db",
+  "cases": [
+    {
+      "persona": "data_engineer",
+      "sql": "SELECT COUNT(*) FROM customers_raw",
+      "expected": "allow",
+      "state": "SUCCEEDED",
+      "as_expected": true,
+      "reason": null,
+      "why": "matrix grants customers"
+    },
+    {
+      "persona": "data_engineer",
+      "sql": "SELECT COUNT(*) FROM products_raw",
+      "expected": "allow",
+      "state": "SUCCEEDED",
+      "as_expected": true,
+      "reason": null,
+      "why": "matrix grants products"
+    },
+    {
+      "persona": "data_engineer",
+      "sql": "SELECT COUNT(*) FROM orders_raw",
+      "expected": "allow",
+      "state": "SUCCEEDED",
+      "as_expected": true,
+      "reason": null,
+      "why": "matrix grants orders"
+    },
+    {
+      "persona": "data_engineer",
+      "sql": "SELECT COUNT(*) FROM quarantine_sales",
+      "expected": "allow",
+      "state": "SUCCEEDED",
+      "as_expected": true,
+      "reason": null,
+      "why": "granted via the sensitivity=restricted LF-Tag, not by name"
+    },
+    {
+      "persona": "finance_analyst",
+      "sql": "SELECT COUNT(*) FROM curated_sales",
+      "expected": "allow",
+      "state": "SUCCEEDED",
+      "as_expected": true,
+      "reason": null,
+      "why": "matrix grants sales"
+    },
+    {
+      "persona": "finance_analyst",
+      "sql": "SELECT COUNT(*) FROM orders_raw",
+      "expected": "allow",
+      "state": "SUCCEEDED",
+      "as_expected": true,
+      "reason": null,
+      "why": "matrix grants orders"
+    },
+    {
+      "persona": "finance_analyst",
+      "sql": "SELECT COUNT(*) FROM customers_raw",
+      "expected": "deny",
+      "state": "FAILED",
+      "as_expected": true,
+      "reason": "TABLE_NOT_FOUND: line 1:22: Table 'awsdatacatalog.training_db.customers_raw' does not exist",
+      "why": "customers is not in the finance matrix row"
+    },
+    {
+      "persona": "marketing_analyst",
+      "sql": "SELECT customer_id, country FROM customers_raw LIMIT 5",
+      "expected": "allow",
+      "state": "SUCCEEDED",
+      "as_expected": true,
+      "reason": null,
+      "why": "the two columns the matrix permits"
+    },
+    {
+      "persona": "marketing_analyst",
+      "sql": "SELECT email FROM customers_raw LIMIT 5",
+      "expected": "deny",
+      "state": "FAILED",
+      "as_expected": true,
+      "reason": "COLUMN_NOT_FOUND: Column 'email' cannot be resolved or requester is not authorized to access requested resources",
+      "why": "THE column-level test - email is explicitly excluded"
+    },
+    {
+      "persona": "marketing_analyst",
+      "sql": "SELECT * FROM customers_raw LIMIT 5",
+      "expected": "allow",
+      "state": "SUCCEEDED",
+      "as_expected": true,
+      "reason": null,
+      "why": "SELECT * SUCCEEDS but Lake Formation resolves it to the granted columns only - see check_star_hides_email(), which asserts what actually comes back"
+    },
+    {
+      "persona": "marketing_analyst",
+      "sql": "SELECT COUNT(*) FROM orders_raw",
+      "expected": "deny",
+      "state": "FAILED",
+      "as_expected": true,
+      "reason": "TABLE_NOT_FOUND: line 1:22: Table 'awsdatacatalog.training_db.orders_raw' does not exist",
+      "why": "orders is not in the marketing matrix row"
+    },
+    {
+      "check": "select_star_returns_only_granted_columns",
+      "sql": "SELECT * FROM customers_raw LIMIT 3",
+      "state": "SUCCEEDED",
+      "reason": null,
+      "columns_returned": [
+        "customer_id",
+        "country"
+      ],
+      "leaked_columns": [],
+      "as_expected": true,
+      "persona": "marketing_analyst",
+      "expected": "granted columns only"
+    }
+  ]
+}

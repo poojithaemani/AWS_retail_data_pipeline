@@ -1,0 +1,93 @@
+{
+  "jobs": [
+    {
+      "name": "de-training-curated-sales",
+      "glue_version": "5.0",
+      "worker_type": "G.1X",
+      "number_of_workers": 2,
+      "max_retries": 0,
+      "timeout_minutes": 30,
+      "script_location": "s3://de-training-749185461065/scripts/curated_sales.py",
+      "bookmarks": "job-bookmark-enable",
+      "glue_data_catalog_enabled": "true",
+      "runs": [
+        {
+          "id": "jr_7dae49c3dc73d31ec63fcecb3a8554b86c1b61f1c0818defa752a9005fa68f76",
+          "state": "SUCCEEDED",
+          "started": "2026-09-04 14:19:17.400000-07:00",
+          "execution_seconds": 129,
+          "dpu_seconds": 259.0,
+          "error": null,
+          "reconciliation": {
+            "source_rows": 15861,
+            "duplicates_removed": 3761,
+            "deduplicated_rows": 12100,
+            "valid_rows": 12060,
+            "rejected_rows": 40,
+            "curated_rows": 12060,
+            "accounted_for": true,
+            "curated_matches_valid": true,
+            "every_source_row_explained": true,
+            "balanced": true
+          }
+        },
+        {
+          "id": "jr_be7c7d7c513b9fcb40ea4dcbfcc137324391c46dd6cd6867bf5041ef7e618d42",
+          "state": "SUCCEEDED",
+          "started": "2026-09-04 13:50:36.393000-07:00",
+          "execution_seconds": 77,
+          "dpu_seconds": 155.0,
+          "error": null,
+          "reconciliation": {
+            "source_rows": 0,
+            "duplicates_removed": 0,
+            "deduplicated_rows": 0,
+            "valid_rows": 0,
+            "rejected_rows": 0,
+            "curated_rows": 0,
+            "accounted_for": true,
+            "curated_matches_valid": true,
+            "every_source_row_explained": true,
+            "balanced": true
+          }
+        },
+        {
+          "id": "jr_60ea25ad267c9a506a49a95b6f5412e77229729c358960dea2c6a7630c1f4498",
+          "state": "SUCCEEDED",
+          "started": "2026-09-03 16:43:42.326000-07:00",
+          "execution_seconds": 100,
+          "dpu_seconds": 201.0,
+          "error": null,
+          "reconciliation": {
+            "source_rows": 15861,
+            "duplicates_removed": 3761,
+            "deduplicated_rows": 12100,
+            "valid_rows": 12060,
+            "rejected_rows": 40,
+            "curated_rows": 12060,
+            "accounted_for": true,
+            "curated_matches_valid": true,
+            "every_source_row_explained": true,
+            "balanced": true
+          }
+        },
+        {
+          "id": "jr_ed752986bdc51a15b9c0948c32c38b35818e0e5eeece8afb727db07b4075243c",
+          "state": "FAILED",
+          "started": "2026-09-03 16:37:51.441000-07:00",
+          "execution_seconds": 75,
+          "dpu_seconds": 150.0,
+          "error": "An error occurred while calling o257.getDynamicFrame. LFCredential fetch failed with status code: 400"
+        },
+        {
+          "id": "jr_1f86f00e0e7e9ea386a88e9225d812c5ee65d4103ea59cc6dc558e2535acc893",
+          "state": "FAILED",
+          "started": "2026-09-03 15:51:34.753000-07:00",
+          "execution_seconds": 65,
+          "dpu_seconds": 130.0,
+          "error": "An error occurred while calling o257.getDynamicFrame. LFCredential fetch failed with status code: 400"
+        }
+      ]
+    }
+  ]
+}

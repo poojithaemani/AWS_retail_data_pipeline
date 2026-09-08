@@ -1,0 +1,205 @@
+{
+  "workgroup": "de-training-wg",
+  "queries": [
+    {
+      "query_id": "a72edf0a-42b4-41f7-b454-3efbbf6f6324",
+      "sql": "SELECT * FROM customers_raw LIMIT 3",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 13:53:42.228000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 723,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "ccd6b508-14e8-4eb9-9a4c-19e54b73ad13",
+      "sql": "SELECT customer_id, country FROM customers_raw LIMIT 5",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 14:22:23.785000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 792,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "11ceb86b-4291-4a1d-8f35-296ed0828604",
+      "sql": "SELECT COUNT(*) FROM customers_raw",
+      "state": "FAILED",
+      "submitted": "2026-09-04 14:22:22.471000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 340,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "9e00d016-a550-4387-948b-29f89b2cdf19",
+      "sql": "SELECT COUNT(*) FROM customers_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 14:22:11.335000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 751,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "f5bce5e3-d921-4175-b8e4-f790d814da65",
+      "sql": "SELECT * FROM customers_raw LIMIT 3",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 14:22:30.771000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 610,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "d212eaa9-4c81-4517-b359-d4ef87810a8c",
+      "sql": "SELECT COUNT(*) FROM orders_raw",
+      "state": "FAILED",
+      "submitted": "2026-09-04 13:53:21.860000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 422,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "ee19d431-342a-4dca-a8d6-51f2e56955b1",
+      "sql": "SELECT email FROM customers_raw LIMIT 5",
+      "state": "FAILED",
+      "submitted": "2026-09-04 14:22:25.471000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 479,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "bc68e799-6525-4641-9847-c775c4d57d9f",
+      "sql": "SELECT * FROM customers_raw LIMIT 5",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 14:22:26.563000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 703,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "6881e1c4-bc3f-42fe-9728-42715042b710",
+      "sql": "SELECT * FROM customers_raw LIMIT 5",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 13:53:20.633000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 654,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "b25fd81c-c462-4241-aa4b-f7ef77383982",
+      "sql": "SELECT COUNT(*) FROM orders_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 13:53:14.547000-07:00",
+      "bytes_scanned": 929784,
+      "megabytes_scanned": 0.93,
+      "runtime_ms": 991,
+      "estimated_usd": 5e-06
+    },
+    {
+      "query_id": "da82dcf0-a748-4982-93a2-42e597ec26c3",
+      "sql": "SELECT email FROM customers_raw LIMIT 5",
+      "state": "FAILED",
+      "submitted": "2026-09-04 13:53:19.328000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 253,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "bc53cc28-40d1-40d4-95aa-85c67a12697a",
+      "sql": "SELECT customer_id, country FROM customers_raw LIMIT 5",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 13:53:17.560000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 1063,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "b0aaae18-90d8-4710-9d82-2be5224adb99",
+      "sql": "SELECT COUNT(*) FROM curated_sales",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 14:22:18.985000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 1217,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "341fa41b-0a90-4ad1-866b-007bfed7de11",
+      "sql": "SELECT COUNT(*) FROM orders_raw",
+      "state": "FAILED",
+      "submitted": "2026-09-04 14:22:28.302000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 400,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "b7e311d3-1bde-4692-afbd-750ceac82236",
+      "sql": "SELECT COUNT(*) FROM products_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 14:22:12.998000-07:00",
+      "bytes_scanned": 9158,
+      "megabytes_scanned": 0.009,
+      "runtime_ms": 813,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "02feed8b-42c6-4f81-8da7-5cde10945b82",
+      "sql": "SELECT COUNT(*) FROM orders_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 14:22:20.700000-07:00",
+      "bytes_scanned": 929784,
+      "megabytes_scanned": 0.93,
+      "runtime_ms": 830,
+      "estimated_usd": 5e-06
+    },
+    {
+      "query_id": "ef51c1f5-7a8a-4809-b14d-cbc3cd4267db",
+      "sql": "SELECT COUNT(*) FROM orders_raw",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 14:22:14.782000-07:00",
+      "bytes_scanned": 929784,
+      "megabytes_scanned": 0.93,
+      "runtime_ms": 1236,
+      "estimated_usd": 5e-06
+    },
+    {
+      "query_id": "e277804e-e889-4a54-a699-5adb867f3efd",
+      "sql": "SELECT COUNT(*) FROM quarantine_sales",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 14:22:17.134000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 696,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "94b42635-45e0-4bc4-807c-6d83a61f2cb6",
+      "sql": "SELECT * FROM customers_raw LIMIT 3",
+      "state": "SUCCEEDED",
+      "submitted": "2026-09-04 14:22:29.443000-07:00",
+      "bytes_scanned": 66194,
+      "megabytes_scanned": 0.066,
+      "runtime_ms": 696,
+      "estimated_usd": 0.0
+    },
+    {
+      "query_id": "5c1f3f23-02c2-46da-aefe-208b5adc8cc7",
+      "sql": "SELECT COUNT(*) FROM customers_raw",
+      "state": "FAILED",
+      "submitted": "2026-09-04 13:53:16.269000-07:00",
+      "bytes_scanned": 0,
+      "megabytes_scanned": 0.0,
+      "runtime_ms": 440,
+      "estimated_usd": 0.0
+    }
+  ]
+}
