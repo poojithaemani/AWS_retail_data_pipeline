@@ -45,20 +45,24 @@ resource "aws_lakeformation_data_lake_settings" "this" {
   # NOTE: clearing these defaults affects only tables created afterwards.
   # Tables that already exist keep their own IAM_ALLOWED_PRINCIPALS grant and
   # must be revoked individually. See docs/learnings.md, Phase 6.
-  dynamic "create_database_default_permissions" {
-    for_each = var.lf_iam_allowed_principals ? [1] : []
-    content {
-      permissions = ["ALL"]
-      principal   = "IAM_ALLOWED_PRINCIPALS"
-    }
+  # Written as always-present blocks with conditional CONTENT, not as dynamic
+  # blocks that disappear. The first version used `for_each = var... ? [1] : []`
+  # and could not remove anything: with the variable false it emitted zero
+  # blocks, the provider read that as "not managed" rather than "set to empty",
+  # and the plan came back `No changes` while IAM_ALLOWED_PRINCIPALS remained
+  # live on every table.
+  #
+  # This is the same trap Phase 2 hit with the crawler's classifiers, recorded
+  # in CLAUDE.md as "omission is not the same as empty". Terraform can only
+  # remove a value it is still describing.
+  create_database_default_permissions {
+    permissions = var.lf_iam_allowed_principals ? ["ALL"] : []
+    principal   = "IAM_ALLOWED_PRINCIPALS"
   }
 
-  dynamic "create_table_default_permissions" {
-    for_each = var.lf_iam_allowed_principals ? [1] : []
-    content {
-      permissions = ["ALL"]
-      principal   = "IAM_ALLOWED_PRINCIPALS"
-    }
+  create_table_default_permissions {
+    permissions = var.lf_iam_allowed_principals ? ["ALL"] : []
+    principal   = "IAM_ALLOWED_PRINCIPALS"
   }
 }
 
