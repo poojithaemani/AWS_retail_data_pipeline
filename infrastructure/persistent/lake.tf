@@ -46,6 +46,19 @@ resource "aws_s3_bucket_public_access_block" "lake" {
   restrict_public_buckets = true
 }
 
+# Phase 8. S3 does not emit to EventBridge unless asked; without this the
+# arrival rule matches nothing and the pipeline never starts.
+#
+# It is the only persistent-layer change the orchestration phase needs, and it
+# adds no permission and no data path: it turns on an event stream the account
+# already supports. The narrowing - which prefix, which suffix, which target -
+# lives in the EventBridge rule in the training layer, where it is destroyed
+# and rebuilt with everything else.
+resource "aws_s3_bucket_notification" "lake_eventbridge" {
+  bucket      = aws_s3_bucket.lake.id
+  eventbridge = true
+}
+
 resource "aws_s3_bucket_lifecycle_configuration" "lake" {
   bucket = aws_s3_bucket.lake.id
 
