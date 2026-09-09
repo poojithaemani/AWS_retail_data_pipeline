@@ -1,0 +1,399 @@
+{
+  "admins": [
+    "arn:aws:iam::749185461065:user/dev-user"
+  ],
+  "create_database_default_permissions": [
+    {
+      "principal": "IAM_ALLOWED_PRINCIPALS",
+      "permissions": []
+    }
+  ],
+  "create_table_default_permissions": [
+    {
+      "principal": "IAM_ALLOWED_PRINCIPALS",
+      "permissions": []
+    }
+  ],
+  "iam_allowed_principals_active": false,
+  "registered_locations": [
+    {
+      "arn": "arn:aws:s3:::de-training-749185461065",
+      "role": "arn:aws:iam::749185461065:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess"
+    }
+  ],
+  "lf_tags": [],
+  "grants": [
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Database",
+      "database": "default",
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "CREATE_TABLE",
+        "DESCRIBE",
+        "DROP"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Database",
+      "database": "training_db",
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALTER",
+        "CREATE_TABLE",
+        "DESCRIBE",
+        "DROP"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Database",
+      "database": "training_db",
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "CREATE_TABLE",
+        "DESCRIBE",
+        "DROP"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "DataLocation",
+      "database": null,
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DATA_LOCATION_ACCESS"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-redshift-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-redshift-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "orders_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "orders",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "orders",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-redshift-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-redshift-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "customers_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "products",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "products",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "ALL_TABLES",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DROP"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "customers",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "customers",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-redshift-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-redshift-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "DESCRIBE"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:role/de-training-glue-role",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "Table",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL",
+        "ALTER",
+        "DELETE",
+        "DESCRIBE",
+        "DROP",
+        "INSERT"
+      ]
+    },
+    {
+      "principal": "arn:aws:iam::749185461065:user/dev-user",
+      "resource_type": "TableWithColumns",
+      "database": "training_db",
+      "table": "products_raw",
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "SELECT"
+      ]
+    },
+    {
+      "principal": "IAM_ALLOWED_PRINCIPALS",
+      "resource_type": "Database",
+      "database": "default",
+      "table": null,
+      "columns": null,
+      "tag_expression": null,
+      "permissions": [
+        "ALL"
+      ]
+    }
+  ],
+  "grant_count": 30
+}

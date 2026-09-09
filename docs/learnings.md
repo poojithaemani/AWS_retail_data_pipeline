@@ -1254,3 +1254,132 @@ defeats the point of capturing it.
 **Cost:** the whole phase ran on 8 RPU with Serverless pausing between
 statements. Redshift bills RPU-seconds while queries execute, not for an idle
 workgroup - an earlier note in this project claimed otherwise and was wrong.
+
+---
+
+## Phase 8 — Orchestration (Step Functions & EventBridge)
+
+**Built**
+
+    S3 arrival -> EventBridge -> Step Functions
+      -> ValidateFile -> Crawler -> Glue ETL -> Notify
+
+Eight resources: SNS topic, two IAM roles and their policies, the state machine,
+an EventBridge rule and its target. One persistent change - EventBridge
+notifications on the lake bucket. **No Lambda.**
+
+Nothing in this phase is a pipeline. The crawler and the ETL already existed and
+were proven; the phase decides when they run and what happens when they do not.
+
+**Concepts**
+
+*Every step had a native integration, so no compute was added.* File validation
+is three conditions on the event, expressible as a Choice state. The crawler has
+an AWS SDK integration, the job has `.sync`, SNS publishes directly. A Lambda
+would have added a runtime, a package and a third IAM role to do what the state
+machine already does - and would have been another thing to keep working.
+
+*The crawler needed a polling loop; the ETL did not.* `startCrawler` returns
+immediately, so the workflow waits and re-checks. `startJobRun.sync` blocks
+until the job reaches a terminal state. The asymmetry is in the AWS
+integrations, not in the workflow's design, and it is why one of the two has a
+Wait/Choice loop around it.
+
+*READY does not mean the crawl worked.* It is also the state after a failed
+crawl, so `CrawlerFinished` checks `LastCrawl.Status = SUCCEEDED` as well as
+`State = READY`. Without that, the ETL would start against a catalog the crawler
+had failed to update - which is exactly the dependency the brief asks to
+enforce.
+
+**Broke - an event pattern that matched almost everything**
+
+The first draft filtered arrivals as:
+
+    key = [{ prefix = "raw/orders/" }, { suffix = ".csv" }]
+
+which reads as "under raw/orders AND ending .csv". It is an OR. Verified with
+`aws events test-event-pattern` rather than assumed:
+
+    raw/orders/y=2026/orders.csv    True    <- intended
+    curated/sales/part-0.parquet    False
+    athena-results/x.csv            True    <- WRONG
+    raw/customers/customers.csv     True    <- WRONG
+
+Every CSV in the bucket would have triggered the pipeline - including the
+pipeline's own Athena output, which is a self-triggering loop: the ETL writes,
+the write fires the rule, the rule runs the ETL. A single
+`{ wildcard = "raw/orders/*.csv" }` ANDs them; the same four keys give one
+match.
+
+Caught before any apply because the instruction was to validate the event
+structure rather than invent it. `test_event_pattern_ands_the_prefix_and_suffix`
+now pins it, and was checked failing on the OR form before being kept.
+
+**Broke - my own reading of the retry evidence**
+
+The deliberate-failure run was summarised with a line reading
+`[TaskScheduled] <- retry attempt`. That is wrong: `TaskScheduled` fires for the
+first attempt too. Counting attempts per state told the truth:
+
+    RunGlueETL   1 attempt   <- Retry never fired
+
+It had not fired because the error was `States.TaskFailed` - a real Glue job
+failure - and only `Glue.*` transient errors are in the Retry list. The design
+was correct; the report was not. Had it gone unchecked, Phase 8 would have
+claimed retry evidence it did not have.
+
+**The two failure modes, demonstrated separately**
+
+| test | error | attempts | outcome |
+| --- | --- | ---: | --- |
+| bad database | `States.TaskFailed` (`TABLE_OR_VIEW_NOT_FOUND`) | 1 | Catch -> NotifyFailure -> ExecutionFailed |
+| crawler already running | `Glue.CrawlerRunningException` | 3 | retried twice, recovered, ExecutionSucceeded |
+
+That contrast is the actual lesson. A deterministic failure is caught and
+reported immediately; a transient one is absorbed without anyone being involved.
+Retrying the first would bill three Glue runs to fail three times, which is why
+`States.ALL` is deliberately absent from Retry and why the job itself carries
+`max_retries = 0` from Phase 3.
+
+The transient case was produced honestly: start the crawler by hand, then start
+an execution while it is still running. `StartCrawler` gets a real 400 from
+Glue, the backoff outlasts the crawl, and the third attempt succeeds.
+
+**The successful end-to-end run**
+
+    ValidateFile -> StartCrawler -> WaitForCrawler (x2) -> GetCrawlerStatus
+                 -> CrawlerFinished -> RunGlueETL -> NotifySuccess     3m 09s
+
+The state machine received exactly what the input transformer promised:
+
+    {"bucket": "de-training-...", "key": "raw/orders/year=2026/month=09/day=11/orders.csv",
+     "size": 3009, "database": "training_db"}
+
+raw/orders went 44 -> 45 partitions: the arrival was appended, nothing
+overwritten, and the immutability rule held throughout.
+
+**What is NOT orchestrated, stated rather than implied**
+
+The brief's diagram ends `... -> Data Quality -> PASS/FAIL -> Publish ->
+Notify`. Two of those are not states in this machine:
+
+- **Data Quality.** The ETL already validates every row, routes rejects to
+  quarantine with a reason, and fails on an unbalanced reconciliation. Its
+  outcome IS the quality result. Adding a separate Glue DQ evaluation would be a
+  second, slower answer to a question already answered - and labelling a generic
+  `JobRun SUCCEEDED` as a "DQ evaluation" would misrepresent what was measured.
+- **Publish.** `publish_catalog.py` is a local script. Step Functions cannot
+  invoke it without a Lambda built solely to satisfy a box on a diagram. It
+  stays an operational step, and the Terraform says so where someone would look.
+
+**Also fixed: Redshift no longer rebuilds itself**
+
+The first Phase 8 plan came back with 18 resources, two of them the Phase 7
+Redshift namespace and workgroup - the most expensive thing in the project,
+recreated to sit idle while a state machine was tested. Gated behind
+`redshift_enabled`, default false, the same pattern as `data_quality_enabled`
+and `lf_pipeline_grants_enabled`. The plan became 16.
+
+**Cost:** three Step Functions executions (standard workflows are effectively
+free at this volume), three crawls and three ETL runs - roughly $0.25. The
+retry demonstration cost one extra crawl and was worth it.

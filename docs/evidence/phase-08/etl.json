@@ -1,0 +1,65 @@
+{
+  "jobs": [
+    {
+      "name": "de-training-curated-sales",
+      "glue_version": "5.0",
+      "worker_type": "G.1X",
+      "number_of_workers": 2,
+      "max_retries": 0,
+      "timeout_minutes": 30,
+      "script_location": "s3://de-training-749185461065/scripts/curated_sales.py",
+      "bookmarks": "job-bookmark-enable",
+      "glue_data_catalog_enabled": "true",
+      "runs": [
+        {
+          "id": "jr_31093715c33450e7c731eb382a814e5f4c2222a7a85cab373eeb15cf533b5cef",
+          "state": "SUCCEEDED",
+          "started": "2026-09-09 15:52:03.313000-07:00",
+          "execution_seconds": 85,
+          "dpu_seconds": 170.0,
+          "error": null,
+          "reconciliation": {
+            "source_rows": 0,
+            "duplicates_removed": 0,
+            "deduplicated_rows": 0,
+            "valid_rows": 0,
+            "rejected_rows": 0,
+            "curated_rows": 0,
+            "accounted_for": true,
+            "curated_matches_valid": true,
+            "every_source_row_explained": true,
+            "balanced": true
+          }
+        },
+        {
+          "id": "jr_e0ce5aadf226fe21b85f32bf329275fbec3c2415142f1d5d7ba274ee8c5aa4b0",
+          "state": "FAILED",
+          "started": "2026-09-09 15:46:54.007000-07:00",
+          "execution_seconds": 52,
+          "dpu_seconds": 104.0,
+          "error": "AnalysisException: [TABLE_OR_VIEW_NOT_FOUND] The table or view `nonexistent_db_for_failure_test`.`customers_raw` cannot be found. Verify the spelling and correctness of the schema and catalog."
+        },
+        {
+          "id": "jr_8b2f2ddc5d0cf81fa638a2ad6a94d455d08f7b69701d2d42f8e6b739225d039e",
+          "state": "SUCCEEDED",
+          "started": "2026-09-09 15:42:23.220000-07:00",
+          "execution_seconds": 98,
+          "dpu_seconds": 196.0,
+          "error": null,
+          "reconciliation": {
+            "source_rows": 15861,
+            "duplicates_removed": 3761,
+            "deduplicated_rows": 12100,
+            "valid_rows": 12060,
+            "rejected_rows": 40,
+            "curated_rows": 12060,
+            "accounted_for": true,
+            "curated_matches_valid": true,
+            "every_source_row_explained": true,
+            "balanced": true
+          }
+        }
+      ]
+    }
+  ]
+}

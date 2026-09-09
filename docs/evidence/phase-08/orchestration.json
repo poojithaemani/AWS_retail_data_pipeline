@@ -1,0 +1,126 @@
+{
+  "state_machine": "arn:aws:states:us-east-2:749185461065:stateMachine:de-training-pipeline",
+  "executions": [
+    {
+      "name": "retry-demo-1788994198",
+      "status": "SUCCEEDED",
+      "started": "2026-09-09 15:50:02.008000-07:00",
+      "stopped": "2026-09-09 15:53:58.685000-07:00",
+      "input": {
+        "bucket": "de-training-749185461065",
+        "key": "raw/orders/year=2026/month=09/day=11/orders.csv",
+        "size": 3009,
+        "database": "training_db"
+      },
+      "state_sequence": [
+        "ValidateFile",
+        "StartCrawler",
+        "WaitForCrawler",
+        "GetCrawlerStatus",
+        "CrawlerFinished",
+        "WaitForCrawler",
+        "GetCrawlerStatus",
+        "CrawlerFinished",
+        "RunGlueETL",
+        "NotifySuccess"
+      ],
+      "task_attempts": {
+        "StartCrawler": 3,
+        "GetCrawlerStatus": 2,
+        "RunGlueETL": 1,
+        "NotifySuccess": 1
+      },
+      "retries_fired": {
+        "StartCrawler": 2,
+        "GetCrawlerStatus": 1
+      },
+      "failures": [
+        {
+          "state": "StartCrawler",
+          "error": "Glue.CrawlerRunningException",
+          "cause": "Crawler with name de-training-raw-crawler has already started (Service: Glue, Status Code: 400, Request ID: 0672f47d-8277-4735-8cf5-7bcbec4d9b08) (SDK Attempt Count: 1)"
+        },
+        {
+          "state": "StartCrawler",
+          "error": "Glue.CrawlerRunningException",
+          "cause": "Crawler with name de-training-raw-crawler has already started (Service: Glue, Status Code: 400, Request ID: e3268705-ec6e-4656-abf4-34b508fd6431) (SDK Attempt Count: 1)"
+        }
+      ]
+    },
+    {
+      "name": "deliberate-failure-1788993949",
+      "status": "FAILED",
+      "started": "2026-09-09 15:45:53.051000-07:00",
+      "stopped": "2026-09-09 15:47:55.305000-07:00",
+      "input": {
+        "bucket": "de-training-749185461065",
+        "key": "raw/orders/year=2026/month=09/day=11/orders.csv",
+        "size": 3009,
+        "database": "nonexistent_db_for_failure_test"
+      },
+      "state_sequence": [
+        "ValidateFile",
+        "StartCrawler",
+        "WaitForCrawler",
+        "GetCrawlerStatus",
+        "CrawlerFinished",
+        "WaitForCrawler",
+        "GetCrawlerStatus",
+        "CrawlerFinished",
+        "RunGlueETL",
+        "NotifyFailure",
+        "PipelineFailed"
+      ],
+      "task_attempts": {
+        "StartCrawler": 1,
+        "GetCrawlerStatus": 2,
+        "RunGlueETL": 1,
+        "NotifyFailure": 1
+      },
+      "retries_fired": {
+        "GetCrawlerStatus": 1
+      },
+      "failures": [
+        {
+          "state": "RunGlueETL",
+          "error": "States.TaskFailed",
+          "cause": "{\"AllocatedCapacity\":2,\"Arguments\":{\"--database\":\"nonexistent_db_for_failure_test\"},\"Attempt\":0,\"CompletedOn\":1788994072657,\"DPUSeconds\":104.0,\"ErrorMessage\":\"AnalysisException: [TABLE_OR_VIEW_NOT_FOUND] The table or vie"
+        }
+      ]
+    },
+    {
+      "name": "e79eee95-bd41-cf29-9f1d-019f1cf88cfe_f4c9c8e7-d3f5-0b63-13f7-23926bff9c12",
+      "status": "SUCCEEDED",
+      "started": "2026-09-09 15:41:22.219000-07:00",
+      "stopped": "2026-09-09 15:44:31.609000-07:00",
+      "input": {
+        "bucket": "de-training-749185461065",
+        "key": "raw/orders/year=2026/month=09/day=11/orders.csv",
+        "size": 3009,
+        "database": "training_db"
+      },
+      "state_sequence": [
+        "ValidateFile",
+        "StartCrawler",
+        "WaitForCrawler",
+        "GetCrawlerStatus",
+        "CrawlerFinished",
+        "WaitForCrawler",
+        "GetCrawlerStatus",
+        "CrawlerFinished",
+        "RunGlueETL",
+        "NotifySuccess"
+      ],
+      "task_attempts": {
+        "StartCrawler": 1,
+        "GetCrawlerStatus": 2,
+        "RunGlueETL": 1,
+        "NotifySuccess": 1
+      },
+      "retries_fired": {
+        "GetCrawlerStatus": 1
+      },
+      "failures": []
+    }
+  ]
+}
