@@ -1,6 +1,19 @@
 # ---------------------------------------------------------------------------
 # Redshift Serverless - the analytical warehouse. Phase 7.
 #
+# OFF BY DEFAULT, added in Phase 8.
+#
+# The Phase 8 plan came back with 18 resources to add, two of them a Redshift
+# namespace and workgroup that orchestration does not touch. Every later `up`
+# would have rebuilt the warehouse - the single most expensive thing in this
+# project - to sit idle while a state machine was tested.
+#
+# var.redshift_enabled turns it on for the phase that needs it, exactly as
+# data_quality_enabled and lf_pipeline_grants_enabled do for theirs. The star
+# schema is rebuilt from the curated lake in eleven statements and reconciles
+# against a known row count and revenue, so recreating it is verifiable rather
+# than precious.
+#
 # In the TRAINING layer, deliberately. Redshift is the first component in this
 # project whose idle existence is not free: Serverless bills RPU-seconds while
 # queries run and holds managed storage in between. A namespace left in the
@@ -55,6 +68,8 @@ data "aws_security_group" "default" {
 }
 
 resource "aws_redshiftserverless_namespace" "warehouse" {
+  count = var.redshift_enabled ? 1 : 0
+
   namespace_name = "${var.project}-warehouse"
   db_name        = "retail"
 
@@ -77,7 +92,9 @@ resource "aws_redshiftserverless_namespace" "warehouse" {
 }
 
 resource "aws_redshiftserverless_workgroup" "warehouse" {
-  namespace_name = aws_redshiftserverless_namespace.warehouse.namespace_name
+  count = var.redshift_enabled ? 1 : 0
+
+  namespace_name = aws_redshiftserverless_namespace.warehouse[0].namespace_name
   workgroup_name = "${var.project}-warehouse-wg"
 
   # The floor. 8 RPU is the smallest Serverless accepts, and the dataset is

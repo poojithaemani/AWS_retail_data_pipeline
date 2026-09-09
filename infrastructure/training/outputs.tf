@@ -30,11 +30,11 @@ output "glue_job_name" {
 
 output "redshift_workgroup" {
   description = "Query with: aws redshift-data execute-statement --workgroup-name <this>"
-  value       = aws_redshiftserverless_workgroup.warehouse.workgroup_name
+  value       = try(aws_redshiftserverless_workgroup.warehouse[0].workgroup_name, null)
 }
 
 output "redshift_database" {
   description = "Database inside the Redshift Serverless namespace."
-  value       = aws_redshiftserverless_namespace.warehouse.db_name
+  value       = try(aws_redshiftserverless_namespace.warehouse[0].db_name, null)
 }
 

@@ -59,3 +59,9 @@ variable "lf_pipeline_grants_enabled" {
   default     = false
 }
 
+variable "redshift_enabled" {
+  description = "Create the Redshift Serverless namespace and workgroup. Off by default: it is the most expensive resource in the project and only Phase 7 needs it, so later phases should not rebuild a warehouse to leave it idle. See redshift.tf."
+  type        = bool
+  default     = false
+}
+
