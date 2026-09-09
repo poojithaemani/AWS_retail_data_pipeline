@@ -1095,3 +1095,162 @@ tables have no IAM fallback, and the Glue role's LF grants are load-bearing for
 Phases 7-9. If one is ever missed, the crawler fails with a permissions error on
 code that did not change - which is exactly how this phase started.
 
+---
+
+## Phase 7 — Analytical warehouse (Redshift)
+
+**Built**
+
+A Redshift Serverless star schema over the curated lake, loaded by COPY and
+queried both natively and through Spectrum.
+
+    infrastructure/training/redshift.tf   namespace + workgroup, 8 RPU
+    sql/redshift/01_ddl.sql               schema and four tables
+    sql/redshift/02_load.sql              COPY, dimensions, dim_date
+    sql/redshift/03_analytics.sql         the brief's query, EXPLAIN evidence
+    sql/redshift/04_spectrum.sql          the governed path
+    scripts/run_redshift.py               Data API runner
+
+32 statements, all green in a single pass. Two Redshift resources; no VPC,
+subnet, security group, NAT or VPC endpoint created, and no JDBC driver.
+
+**The load, reconciled exactly**
+
+    fact_orders   12,060 rows   12,060 distinct order_ids   $10,705,326.72
+    dim_customer   1,000        dim_product 200             dim_date 32
+
+Every figure matches the independently validated lake baseline to the cent.
+Redshift and Athena also agree per category - Electronics 1,635 orders and
+$4,531,285.52 in both engines - which is a stronger check than either alone,
+because they read the same S3 objects through entirely different engines.
+
+One honest wrinkle: `avg_order` differs by a cent (Athena 2771.43, Redshift
+2771.42). The sums are identical, so it is rounding mode, not data.
+
+**Concepts**
+
+*Why the warehouse model differs from the lake.* curated_sales is one wide
+denormalised row per order, carrying product_name, category and country inline.
+That is right for a lake: a file that explains itself, readable by anything, no
+joins required. The star wants the opposite trade - country stored once instead
+of twelve thousand times, a category filter that never touches the fact, and
+distribution and sort keys chosen per table. It buys join work at query time in
+exchange for scan efficiency, which is only worth it because analytical queries
+filter and aggregate far more than they select whole rows.
+
+*The staging table is where the two models meet.* COPY cannot load the star
+directly, because the file is wide and the model is narrow. The wide row lands
+in `stg_sales`, dimensions and the narrow fact are derived from it in SQL, and
+the staging table is dropped. That gap between file shape and model shape IS the
+normalisation step.
+
+*Distribution and sort, confirmed rather than asserted:*
+
+    fact_orders    KEY(customer_id)  sortkey order_date  12,060 rows  skew 6.20
+    dim_customer   ALL               dim_product ALL     dim_date ALL
+
+The skew is worth naming rather than hiding. Distributing 12,060 rows by
+customer_id leaves the busiest slice with about six times the rows of the
+quietest. It costs nothing at this size, but it is the real trade of a KEY
+distribution on an unevenly distributed column - EVEN would balance better and
+lose join locality.
+
+**Broke - COPY, on a type nobody would guess from the error**
+
+    Spectrum Scan Error, code 15007
+    context: File '.../curated/sales/year=2026/month=08/day=23/part-00000-...'
+
+The message names a FILE. The fault was a COLUMN TYPE. Reading the Parquet
+schema directly gave the answer in seconds:
+
+    price        double                <- staging declared DECIMAL(12,2)
+    order_total  decimal128(12,2)
+
+`price` is a double because Phase 2's crawler inferred products.price that way;
+order_total is a decimal because Phase 3 computed it explicitly to keep money
+exact. COPY from a columnar format matches by POSITION and will not silently
+convert, so the staging table has to describe the FILE, not the destination.
+Fixed by declaring DOUBLE PRECISION in staging and casting to DECIMAL(12,2) on
+the way into the star, so the warehouse model is unchanged.
+
+Redshift's own diagnostics were closed off - the Data API identity cannot read
+`stl_load_errors` or `svl_s3log` - which is worth knowing before an incident
+rather than during one.
+
+**Broke - Spectrum, twice, and the second failure is the finding**
+
+Nothing was pre-granted, deliberately. Fixing one missing thing at a time made
+the requirement structure visible instead of guessed:
+
+| attempt | state | failure |
+| --- | --- | --- |
+| 1 | no grant, no action | `Insufficient Lake Formation permission(s) on orders_raw` |
+| 2 | grant only | `not authorized to perform: lakeformation:GetDataAccess` (code 9000) |
+| 3 | grant + action | works |
+
+Reading a Lake Formation table through the catalog needs BOTH halves; they live
+in different systems and fail at different stages with different messages. This
+is the second principal to need the identical pairing after the Glue role in
+Phase 6, which is what makes it a property of the GOVERNED PATH rather than a
+quirk of Glue.
+
+Granting both at once would have worked and taught nothing about which mattered.
+
+*The contrast that is the point of Day 7:* COPY needed neither. Same bytes, same
+role, two routes:
+
+    COPY      S3 directly, plain IAM     -> worked first time
+    Spectrum  catalog -> Lake Formation  -> refused twice
+
+That contrast only exists because Phase 6 removed IAM_ALLOWED_PRINCIPALS. Before
+that, both routes would have worked for entirely uninteresting reasons.
+
+*A smaller finding worth keeping:* `list_external_tables` returned zero rows
+before the grant and three after, while still succeeding both times. Catalog
+visibility and data access are separately gated - a principal sees only tables it
+may read.
+
+**Broke - my own reporting**
+
+The sort-key comparison came out backwards: the sortkey-usable query took 147 ms
+against 139 ms for the function-wrapped one. The runner printed
+`pruned X ms vs unpruned Y ms`, which reads as a result even when the numbers say
+the opposite.
+
+The planner's estimate is the honest evidence at this scale:
+
+    explain_pruned    XN Seq Scan  cost=0.00..3.83    rows=256
+    explain_unpruned  XN Seq Scan  cost=0.00..180.90  rows=61
+
+About 47x lower estimated cost when the predicate is directly comparable to the
+sort key; wrapping it in TO_CHAR makes the column non-comparable and zone maps
+cannot eliminate blocks. Both return [249, 246351.14], so the difference is
+attributable to route rather than result.
+
+The runner now prints the timings as observations and says so explicitly when the
+optimised query was not faster. At twelve thousand rows wall clock is dominated
+by fixed overhead and cache state, and quoting a speedup this dataset cannot
+support would be worse than reporting nothing.
+
+**Broke - evidence that overwrote itself**
+
+Running the stages separately left `warehouse.json` holding only the last one:
+the reconciliation and EXPLAIN output were gone by the time evidence was
+captured. Re-running all four stages in one invocation produced a complete
+record, and re-validated the whole thing end to end as a side effect. A
+per-stage runner that writes one file needs either a merge or a single-pass
+habit; this took the habit.
+
+**Trimmed before running, not after**
+
+The first draft was 43 SQL statements for a 10% rubric item. Eleven were cut
+before anything executed - four speculative TRUNCATEs, a referential check that
+re-proved the ETL's own invariant, a second date query, a window function that
+belongs to Day 5 rather than Day 7, an extra EXPLAIN, an stv_blocklist probe, and
+two surplus Spectrum reads. 32 remain, with no loss of topic coverage. Trimming
+afterwards would have left the evidence pack showing the padded version, which
+defeats the point of capturing it.
+
+**Cost:** the whole phase ran on 8 RPU with Serverless pausing between
+statements. Redshift bills RPU-seconds while queries execute, not for an idle
+workgroup - an earlier note in this project claimed otherwise and was wrong.

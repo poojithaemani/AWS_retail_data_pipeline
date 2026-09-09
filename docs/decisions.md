@@ -638,3 +638,58 @@ The alternative - leaving the fallback on and demonstrating the grants
 theoretically - would have produced a governance phase that proved nothing and
 left a trap for whoever removed it later.
 
+---
+
+## D26 — Redshift Serverless lives in the training layer
+
+Everything else about Redshift argued for the persistent layer: the IAM role is
+already there, the namespace holds state, and rebuilding a warehouse each
+session sounds wasteful.
+
+It goes in training anyway, because it is the first component in this project
+whose existence is not free. A Glue job definition, a crawler, a DQ ruleset and
+a log group all cost nothing while idle; a Redshift namespace holds managed
+storage, and a workgroup left in the persistent layer would survive `down` and
+accrue quietly. The teardown rule exists precisely to make that impossible.
+
+The star schema is not the asset - the curated lake is. Rebuilding the warehouse
+takes eleven statements against data that is already validated, and the load
+reconciles against a known row count and revenue every time, so a rebuild is
+verifiable rather than hopeful.
+
+**The Data API, not JDBC.** A JDBC client would have needed either a public
+endpoint or a route out of the VPC, and the project ruled out NAT in Phase 0 for
+~$33/month of no capability. The Data API authenticates with the caller's IAM
+identity and needs no driver, no password and no network path - so the workgroup
+is private, and Phase 7 created no networking resources at all.
+
+One cost note recorded because an earlier claim in this project was wrong:
+Serverless bills RPU-seconds while queries run and pauses to zero between them.
+An idle workgroup costs managed storage only, not 8 RPU per hour.
+
+## D27 — Nothing is pre-granted to prove a permission is needed
+
+Spectrum was run with no Lake Formation grant and no `lakeformation:GetDataAccess`,
+knowing both were probably required. Three attempts, each fixing exactly one
+missing thing:
+
+    no grant, no action   Insufficient Lake Formation permission(s) on orders_raw
+    grant only            not authorized to perform: lakeformation:GetDataAccess
+    grant + action        works
+
+Granting both at once would have worked on the first try and taught nothing
+about which mattered. Because they were separated, the phase produced a
+generalisation instead of a fix: reading a Lake Formation table through the
+catalog needs both halves, they live in different systems, and they fail at
+different stages with different messages. The Glue role needed the identical
+pairing in Phase 6, so it is a property of the governed path rather than a quirk
+of one service.
+
+The same discipline produced the contrast the day is actually about. COPY needed
+neither, because it reads S3 directly under plain IAM. Same bytes, same role,
+two routes, different requirements - and that only became visible once Phase 6
+removed IAM_ALLOWED_PRINCIPALS.
+
+The cost of the approach is two extra failed executions, about four seconds of
+Redshift time. The alternative is a working system nobody understands, which is
+the expensive kind of working.

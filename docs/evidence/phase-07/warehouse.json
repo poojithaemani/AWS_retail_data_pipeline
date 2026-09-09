@@ -1,0 +1,686 @@
+{
+  "workgroup": "de-training-warehouse-wg",
+  "database": "retail",
+  "statements": [
+    {
+      "state": "FINISHED",
+      "duration_ms": 168,
+      "rows_affected": 0,
+      "error": null,
+      "id": "8d4f08af-b3d0-4786-8311-6a6ddc771913",
+      "name": "drop_schema",
+      "stage": "ddl"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 132,
+      "rows_affected": 0,
+      "error": null,
+      "id": "087a56f0-8364-4df5-a1f3-4910eb929169",
+      "name": "create_schema",
+      "stage": "ddl"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 120,
+      "rows_affected": 0,
+      "error": null,
+      "id": "cf4d5628-537b-48db-95b1-775dfdcceaba",
+      "name": "dim_customer",
+      "stage": "ddl"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 121,
+      "rows_affected": 0,
+      "error": null,
+      "id": "54fb635d-8c9d-47f9-aba9-a70b44853a78",
+      "name": "dim_product",
+      "stage": "ddl"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 121,
+      "rows_affected": 0,
+      "error": null,
+      "id": "2c64cf71-0f6b-49d5-b350-8e999235db36",
+      "name": "dim_date",
+      "stage": "ddl"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 164,
+      "rows_affected": 0,
+      "error": null,
+      "id": "a34bb049-a98d-462a-b58b-ac2f4e2d4a96",
+      "name": "fact_orders",
+      "stage": "ddl"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 33,
+      "rows_affected": 4,
+      "error": null,
+      "id": "8e46353e-4c69-4cd5-a538-cdd878cfa0ff",
+      "columns": [
+        "table_name"
+      ],
+      "rows": [
+        [
+          "dim_customer"
+        ],
+        [
+          "dim_date"
+        ],
+        [
+          "dim_product"
+        ],
+        [
+          "fact_orders"
+        ]
+      ],
+      "name": "confirm_tables",
+      "stage": "ddl"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 44,
+      "rows_affected": 0,
+      "error": null,
+      "id": "0ca7f886-9358-4b9c-ad24-63fb31ed558d",
+      "name": "drop_stg_if_exists",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 128,
+      "rows_affected": 0,
+      "error": null,
+      "id": "9e07600d-e1f7-4b90-9073-1250de6c9113",
+      "name": "stg_sales",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 2011,
+      "rows_affected": 0,
+      "error": null,
+      "id": "0c80206d-5194-4852-9ff8-d430daa4d018",
+      "name": "copy_stg_sales",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 441,
+      "rows_affected": 1000,
+      "error": null,
+      "id": "789675fd-0ddb-4553-be34-a9481c929513",
+      "name": "load_dim_customer",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 432,
+      "rows_affected": 200,
+      "error": null,
+      "id": "943c5103-67d0-4fbd-98aa-94555b7d8d1c",
+      "name": "load_dim_product",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 2636,
+      "rows_affected": 12060,
+      "error": null,
+      "id": "2213042e-ac47-49d2-b209-6fe2f34d7aa3",
+      "name": "load_fact_orders",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 668,
+      "rows_affected": 32,
+      "error": null,
+      "id": "4507880a-c90a-41e0-9d5d-0a03338950ea",
+      "name": "load_dim_date",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 114,
+      "rows_affected": 0,
+      "error": null,
+      "id": "d15a94ae-4b3b-4fe2-8125-b9b4bc55cfbc",
+      "name": "drop_stg_sales",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 269,
+      "rows_affected": 0,
+      "error": null,
+      "id": "e56e39de-bb74-4d70-8408-1806bf46cef5",
+      "name": "analyze_tables",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 338,
+      "rows_affected": 1,
+      "error": null,
+      "id": "c30362e0-f048-450a-aa01-93d1c6737aa3",
+      "columns": [
+        "fact_rows",
+        "distinct_orders",
+        "revenue"
+      ],
+      "rows": [
+        [
+          12060,
+          12060,
+          "10705326.72"
+        ]
+      ],
+      "name": "reconcile_fact",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 66,
+      "rows_affected": 1,
+      "error": null,
+      "id": "374878fc-d078-4dd7-84e5-21947a2321de",
+      "columns": [
+        "customers",
+        "products",
+        "dates"
+      ],
+      "rows": [
+        [
+          1000,
+          200,
+          32
+        ]
+      ],
+      "name": "reconcile_dims",
+      "stage": "load"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 233,
+      "rows_affected": 14,
+      "error": null,
+      "id": "3503d308-3bcb-465b-ac0f-b1d156e13599",
+      "columns": [
+        "country",
+        "revenue"
+      ],
+      "rows": [
+        [
+          "US",
+          "3130833.60"
+        ],
+        [
+          "IN",
+          "1241169.07"
+        ],
+        [
+          "GB",
+          "1224137.37"
+        ],
+        [
+          "BR",
+          "759536.51"
+        ],
+        [
+          "DE",
+          "757285.20"
+        ],
+        [
+          "CA",
+          "755518.44"
+        ],
+        [
+          "FR",
+          "610418.66"
+        ],
+        [
+          "AU",
+          "505073.82"
+        ],
+        [
+          "JP",
+          "405186.65"
+        ],
+        [
+          "ES",
+          "375231.51"
+        ]
+      ],
+      "name": "revenue_by_country",
+      "stage": "analytics"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 227,
+      "rows_affected": 10,
+      "error": null,
+      "id": "2a8c281c-529e-40aa-befd-efee4eb92608",
+      "columns": [
+        "category",
+        "orders",
+        "revenue",
+        "avg_order"
+      ],
+      "rows": [
+        [
+          "Electronics",
+          1635,
+          "4531285.52",
+          "2771.42"
+        ],
+        [
+          "Automotive",
+          1304,
+          "1864554.11",
+          "1429.87"
+        ],
+        [
+          "Office",
+          1165,
+          "1038410.44",
+          "891.33"
+        ],
+        [
+          "Sports & Outdoors",
+          852,
+          "1010731.36",
+          "1186.30"
+        ],
+        [
+          "Home & Kitchen",
+          1368,
+          "878887.97",
+          "642.46"
+        ],
+        [
+          "Apparel",
+          1882,
+          "718343.10",
+          "381.69"
+        ],
+        [
+          "Toys & Games",
+          919,
+          "258159.58",
+          "280.91"
+        ],
+        [
+          "Beauty",
+          1011,
+          "177910.38",
+          "175.97"
+        ],
+        [
+          "Books",
+          1098,
+          "129675.59",
+          "118.10"
+        ],
+        [
+          "Grocery",
+          826,
+          "97368.67",
+          "117.87"
+        ]
+      ],
+      "name": "revenue_by_category",
+      "stage": "analytics"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 226,
+      "rows_affected": 2,
+      "error": null,
+      "id": "34a63c38-4e1f-4b50-942d-7e17cf680fea",
+      "columns": [
+        "year",
+        "month",
+        "orders",
+        "revenue"
+      ],
+      "rows": [
+        [
+          2026,
+          8,
+          10000,
+          "8850092.78"
+        ],
+        [
+          2026,
+          9,
+          2060,
+          "1855233.94"
+        ]
+      ],
+      "name": "monthly_revenue_trend",
+      "stage": "analytics"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 406,
+      "rows_affected": 20,
+      "error": null,
+      "id": "8a571797-5892-489f-9ab0-487846e53731",
+      "columns": [
+        "category",
+        "country",
+        "year",
+        "month",
+        "orders",
+        "revenue"
+      ],
+      "rows": [
+        [
+          "Electronics",
+          "US",
+          2026,
+          8,
+          388,
+          "1094825.05"
+        ],
+        [
+          "Automotive",
+          "US",
+          2026,
+          8,
+          324,
+          "452168.33"
+        ],
+        [
+          "Electronics",
+          "GB",
+          2026,
+          8,
+          167,
+          "444889.07"
+        ],
+        [
+          "Electronics",
+          "IN",
+          2026,
+          8,
+          163,
+          "444184.96"
+        ],
+        [
+          "Electronics",
+          "CA",
+          2026,
+          8,
+          98,
+          "276590.75"
+        ],
+        [
+          "Sports & Outdoors",
+          "US",
+          2026,
+          8,
+          196,
+          "254214.92"
+        ],
+        [
+          "Electronics",
+          "DE",
+          2026,
+          8,
+          93,
+          "249397.84"
+        ],
+        [
+          "Office",
+          "US",
+          2026,
+          8,
+          284,
+          "237606.21"
+        ],
+        [
+          "Electronics",
+          "BR",
+          2026,
+          8,
+          87,
+          "237370.65"
+        ],
+        [
+          "Electronics",
+          "US",
+          2026,
+          9,
+          84,
+          "228114.72"
+        ]
+      ],
+      "name": "star_join_all_dimensions",
+      "stage": "analytics"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 33,
+      "rows_affected": 3,
+      "error": null,
+      "id": "e3192904-a999-43ed-94de-1a44533c223a",
+      "columns": [
+        "QUERY PLAN"
+      ],
+      "rows": [
+        [
+          "XN Aggregate  (cost=5.12..5.12 rows=1 width=16)"
+        ],
+        [
+          "  ->  XN Seq Scan on fact_orders  (cost=0.00..3.83 rows=256 width=16)"
+        ],
+        [
+          "        Filter: ((order_date < '2026-08-20 00:00:00'::timestamp without time zone) AND (order_date >= '2026-08-19 00:00:00'::timestamp without time zone))"
+        ]
+      ],
+      "name": "explain_pruned",
+      "stage": "analytics"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 147,
+      "rows_affected": 1,
+      "error": null,
+      "id": "2a3a8b76-2505-45c9-90c4-9de10a239265",
+      "columns": [
+        "orders",
+        "revenue"
+      ],
+      "rows": [
+        [
+          249,
+          "246351.14"
+        ]
+      ],
+      "name": "pruned_by_sortkey",
+      "stage": "analytics"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 31,
+      "rows_affected": 3,
+      "error": null,
+      "id": "267bdb46-af3e-4536-9998-414344d8a160",
+      "columns": [
+        "QUERY PLAN"
+      ],
+      "rows": [
+        [
+          "XN Aggregate  (cost=181.21..181.21 rows=1 width=16)"
+        ],
+        [
+          "  ->  XN Seq Scan on fact_orders  (cost=0.00..180.90 rows=61 width=16)"
+        ],
+        [
+          "        Filter: (to_char(order_date, 'YYYY-MM-DD'::text) = '2026-08-19'::text)"
+        ]
+      ],
+      "name": "explain_unpruned",
+      "stage": "analytics"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 139,
+      "rows_affected": 1,
+      "error": null,
+      "id": "91db4e1f-5946-4a1c-8ec8-30625e2e3e0a",
+      "columns": [
+        "orders",
+        "revenue"
+      ],
+      "rows": [
+        [
+          249,
+          "246351.14"
+        ]
+      ],
+      "name": "unpruned_same_answer",
+      "stage": "analytics"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 799,
+      "rows_affected": 4,
+      "error": null,
+      "id": "54e8c50a-e3ba-443f-8fba-96722ae602ef",
+      "columns": [
+        "table",
+        "diststyle",
+        "sortkey1",
+        "size",
+        "tbl_rows",
+        "skew_rows"
+      ],
+      "rows": [
+        [
+          "dim_customer",
+          "ALL",
+          "customer_id",
+          20,
+          "1000",
+          null
+        ],
+        [
+          "dim_date",
+          "ALL",
+          "date_key",
+          36,
+          "32",
+          null
+        ],
+        [
+          "dim_product",
+          "ALL",
+          "product_id",
+          28,
+          "200",
+          null
+        ],
+        [
+          "fact_orders",
+          "KEY(customer_id)",
+          "order_date",
+          2816,
+          "12060",
+          "6.20"
+        ]
+      ],
+      "name": "table_design_check",
+      "stage": "analytics"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 103,
+      "rows_affected": 0,
+      "error": null,
+      "id": "0ae2a764-cfe4-42fd-a5a5-e73d4361321e",
+      "name": "drop_external_schema",
+      "stage": "spectrum"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 106,
+      "rows_affected": 0,
+      "error": null,
+      "id": "db6a0862-1df1-4d8b-801a-0c5133fa3688",
+      "name": "create_external_schema",
+      "stage": "spectrum"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 134,
+      "rows_affected": 3,
+      "error": null,
+      "id": "a0dd9525-96c1-4f16-aa5a-2b22dbc337c3",
+      "columns": [
+        "schemaname",
+        "tablename"
+      ],
+      "rows": [
+        [
+          "spectrum_lake",
+          "customers_raw"
+        ],
+        [
+          "spectrum_lake",
+          "orders_raw"
+        ],
+        [
+          "spectrum_lake",
+          "products_raw"
+        ]
+      ],
+      "name": "list_external_tables",
+      "stage": "spectrum"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 1471,
+      "rows_affected": 1,
+      "error": null,
+      "id": "a6f60a0d-a788-4329-b388-ddcb18629522",
+      "columns": [
+        "orders_raw_rows"
+      ],
+      "rows": [
+        [
+          15861
+        ]
+      ],
+      "name": "spectrum_count_orders",
+      "stage": "spectrum"
+    },
+    {
+      "state": "FINISHED",
+      "duration_ms": 1495,
+      "rows_affected": 1,
+      "error": null,
+      "id": "545f266a-9305-447f-a646-a320ba65b3b9",
+      "columns": [
+        "lake_raw_orders",
+        "warehouse_fact_orders"
+      ],
+      "rows": [
+        [
+          15861,
+          12060
+        ]
+      ],
+      "name": "spectrum_vs_warehouse",
+      "stage": "spectrum"
+    }
+  ],
+  "failed": []
+}
