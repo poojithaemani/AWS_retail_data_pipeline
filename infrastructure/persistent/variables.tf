@@ -79,8 +79,8 @@ variable "raw_maintenance_principal_arns" {
 }
 
 variable "lf_iam_allowed_principals" {
-  description = "Keep Lake Formation's IAM_ALLOWED_PRINCIPALS default. TRUE until the persona grants exist and the pipeline has been re-tested under them; flipping to false is the point of no return for Phase 6 and applies to every session afterwards. See lakeformation.tf."
+  description = "Keep Lake Formation's IAM_ALLOWED_PRINCIPALS default. FALSE since Phase 6 step 11 removed it - see D25. It was true while the persona grants were being built and the pipeline re-tested under them, and the default was flipped once that was done: the removal is permanent, so the configuration says so rather than depending on an environment variable being remembered. Setting it back to true would restore the fallback and silently un-enforce every persona grant."
   type        = bool
-  default     = true
+  default     = false
 }
 
