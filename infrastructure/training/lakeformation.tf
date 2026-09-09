@@ -87,6 +87,96 @@ resource "aws_lakeformation_permissions" "glue_database" {
   }
 }
 
+# The publisher. scripts/publish_catalog.py runs as the caller - dev-user - and
+# renames the crawler's discovered tables into the graded names, which means
+# deleting the intermediates once the copies exist.
+#
+# It needs an explicit DROP and being a Data Lake Administrator is not enough.
+# That is worth stating precisely, because it is the opposite of what the word
+# "administrator" suggests:
+#
+#   customers_raw   CreatedBy dev-user    -> dev-user holds ALL/ALTER/DROP/...
+#   customers       CreatedBy AWS-Crawler -> ONLY the glue role holds them
+#
+# Lake Formation gives the CREATING principal implicit full permissions on a
+# table. dev-user's database-level DROP does not cascade to a table another
+# principal created, and admin status does not substitute for the table-level
+# check. Recovery after the lifecycle incident is where this surfaced:
+#
+#   AccessDeniedException on DeleteTable:
+#   Insufficient Lake Formation permission(s): Required Drop on customers
+#
+# It had worked in Phase 6 only because dev-user still held grants from before
+# IAM_ALLOWED_PRINCIPALS was removed. `down` destroyed those with the rest of
+# the training layer, so without this resource the rename breaks in every
+# session from now on - the catalog is left holding both names, halfway through.
+#
+# wildcard = true is ALL_TABLES in training_db, and it is deliberate rather than
+# lazy: the tables this needs to drop are created by the crawler AFTER this
+# grant is applied, so they cannot be named here. The scope is one database that
+# is rebuilt every session, and the permission is DROP alone - not ALL, not
+# SELECT, and nothing at all outside training_db.
+resource "aws_lakeformation_permissions" "publisher_drop" {
+  count = var.lf_pipeline_grants_enabled ? 1 : 0
+
+  principal   = data.aws_caller_identity.current.arn
+  permissions = ["DROP"]
+
+  table {
+    database_name = aws_glue_catalog_database.training.name
+    wildcard      = true
+  }
+}
+
+# Redshift Spectrum, added in Phase 7 in response to an actual denial.
+#
+# COPY and Spectrum read the same curated bytes by different routes, and only
+# one of them is governed:
+#
+#   COPY      S3 directly, under the role's own IAM policy. Worked first time.
+#   Spectrum  Redshift -> Glue Catalog -> Lake Formation -> S3. Refused:
+#
+#     AccessDeniedException from glue
+#     Insufficient Lake Formation permission(s) on orders_raw
+#
+# That is the whole point of the exercise made concrete. The role's IAM policy
+# already allows the catalog and the objects; after Phase 6 removed
+# IAM_ALLOWED_PRINCIPALS, IAM alone stopped being sufficient for anything
+# reached through the catalog.
+#
+# Note where it did NOT fail. Creating the external schema and listing tables
+# both succeeded - metadata is reachable. Only the data read is refused, which
+# is the distinction between knowing a table exists and being allowed to read
+# it, and it is visible here rather than merely asserted.
+#
+# ONE THING AT A TIME, DELIBERATELY
+# ---------------------------------
+# The role is missing TWO things: this grant, and the IAM action
+# lakeformation:GetDataAccess (currently implicitDeny). Phase 6 established
+# that a Glue job needs both.
+#
+# Only the grant is added here. If Spectrum then works, GetDataAccess was never
+# required on this path and we have learned something real about how Spectrum
+# differs from a Glue job reading the same table. If it instead fails with
+# "LFCredential fetch failed", that names the second requirement precisely and
+# earns its own change. Granting both at once would work and would prove
+# nothing about which was necessary.
+#
+# SELECT and DESCRIBE only, on the three raw tables. Not curated_sales - the
+# warehouse already holds that data via COPY, and Spectrum's purpose here is to
+# reach what was never loaded.
+resource "aws_lakeformation_permissions" "spectrum_tables" {
+  for_each = var.lf_pipeline_grants_enabled ? toset(["customers_raw", "products_raw", "orders_raw"]) : toset([])
+
+  principal   = local.redshift_role
+  permissions = ["SELECT", "DESCRIBE"]
+
+  table {
+    database_name = aws_glue_catalog_database.training.name
+    name          = each.value
+  }
+}
+
 # --- governance grants: var.lf_grants_enabled - the matrix (p.15) ---------
 #
 #   DataEngineerRole      customers, products, orders
