@@ -49,21 +49,64 @@ resource "aws_s3_bucket_public_access_block" "lake" {
 resource "aws_s3_bucket_lifecycle_configuration" "lake" {
   bucket = aws_s3_bucket.lake.id
 
-  # Data expiry is the cost guard for the lake. Everything here is
-  # regenerable from src/generate with a fixed seed.
+  # Data expiry is the cost guard for the lake, and it applies to DERIVED
+  # prefixes only. raw/ is deliberately absent from every rule below.
+  #
+  # THIS RULE DELETED THE RAW LAYER ONCE. IT IS WHY THE PREFIXES ARE LISTED.
+  # -----------------------------------------------------------------------
+  # The original had `filter {}` - an empty filter, meaning every object in the
+  # bucket - with a seven day expiry. On 2026-09-04 it did exactly what it was
+  # configured to do: forty-two order partitions plus customers and products
+  # aged past seven days and S3 removed them. Two objects survived, both
+  # uploaded within the window.
+  #
+  # The comment it carried ("everything here is regenerable from src/generate
+  # with a fixed seed") was true when it was written in Phase 0 and quietly
+  # stopped being true in Phase 3. From then on raw/ accumulated deliveries the
+  # generator does not produce - the orphan-product partition and the Phase 4
+  # incremental tranche - and it was the append-only history the bookmark and
+  # reconciliation exercises were built on.
+  #
+  # Note what did NOT save it. The bucket policy's DenyRawObjectDeletion blocks
+  # s3:DeleteObject by PRINCIPALS. Lifecycle expiry is performed by S3 itself
+  # against no principal, so a bucket policy cannot see it, let alone refuse it.
+  # The raw layer was protected against deletion by callers and completely
+  # exposed to deletion by configuration - and the second is the one that
+  # happened.
+  #
+  # Each derived prefix gets its own rule because an S3 lifecycle rule takes a
+  # single prefix. That is more verbose than one filter, and the verbosity is
+  # the point: adding a prefix here is a deliberate act, whereas `filter {}`
+  # silently covers anything anyone creates later.
+  dynamic "rule" {
+    for_each = toset(["processed/", "curated/", "quarantine/", "temp/", "experiments/"])
+
+    content {
+      id     = "expire-${trimsuffix(rule.value, "/")}"
+      status = "Enabled"
+
+      filter {
+        prefix = rule.value
+      }
+
+      expiration {
+        days = var.lake_expiration_days
+      }
+
+      noncurrent_version_expiration {
+        noncurrent_days = 1
+      }
+    }
+  }
+
+  # Abandoned multipart uploads, everywhere including raw/. This one is safe to
+  # apply bucket-wide because it removes only the unusable fragments of uploads
+  # that never completed - it can never touch a whole object.
   rule {
-    id     = "expire-training-data"
+    id     = "abort-incomplete-uploads"
     status = "Enabled"
 
     filter {}
-
-    expiration {
-      days = var.lake_expiration_days
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 1
-    }
 
     abort_incomplete_multipart_upload {
       days_after_initiation = 1

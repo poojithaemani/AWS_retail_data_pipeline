@@ -290,3 +290,47 @@ def test_glue_job_zip_preserves_the_package_directory() -> None:
     assert shipped <= excluded, (
         f"these src/ directories would be shipped to Glue unexcluded: {shipped - excluded}"
     )
+
+
+def test_no_lifecycle_expiry_can_reach_the_raw_layer() -> None:
+    """An expiration rule must name a derived prefix, never the whole bucket.
+
+    This is a regression test for a real data loss. `lake.tf` carried a single
+    lifecycle rule with `filter {}` -- every object in the bucket -- and a seven
+    day expiry. It deleted the raw layer: forty-two order partitions plus the
+    customer and product files, leaving only the two objects young enough to
+    survive the window.
+
+    The bucket policy did not help and could not. DenyRawObjectDeletion refuses
+    s3:DeleteObject by *principals*; lifecycle expiry is carried out by S3
+    against no principal at all, so the policy never sees it. raw/ was protected
+    from deletion by callers and entirely exposed to deletion by configuration.
+
+    An `abort_incomplete_multipart_upload` rule is exempt: it removes only the
+    fragments of uploads that never finished and cannot remove a whole object.
+    """
+    body = (REPO_ROOT / "infrastructure" / "persistent" / "lake.tf").read_text(encoding="utf-8")
+
+    start = body.find('resource "aws_s3_bucket_lifecycle_configuration"')
+    assert start != -1, "no lifecycle configuration found in lake.tf"
+    block = body[start:]
+
+    # Split into rule bodies, keeping only those that actually expire objects.
+    rules = re.split(r"\n\s*(?:dynamic\s+)?\"?rule\"?\s*\{", block)[1:]
+    expiring = [r for r in rules if re.search(r"^\s*expiration\s*\{", r, re.M)]
+    assert expiring, "expected at least one expiration rule to guard"
+
+    offenders = []
+    for rule in expiring:
+        head = rule[: rule.find("expiration")]
+        # A prefix may be a literal or, in a dynamic block, the iterator value.
+        has_prefix = re.search(r"prefix\s*=\s*(\"[^\"]+\"|rule\.value)", head)
+        if not has_prefix or re.search(r"filter\s*\{\s*\}", head):
+            offenders.append(" ".join(rule.split())[:90])
+
+    assert not offenders, (
+        "these lifecycle rules expire objects without naming a prefix, so they "
+        f"would delete raw/ as well: {offenders}"
+    )
+
+    assert '"raw/"' not in block, "raw/ must never appear in a lifecycle expiry rule"
