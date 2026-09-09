@@ -1,0 +1,156 @@
+{
+  "Comment": "Phase 8: S3 arrival -> validate -> crawl -> ETL -> notify. Orchestrates the existing Phase 2 crawler and Phase 3 ETL; builds no new pipeline.",
+  "StartAt": "ValidateFile",
+  "States": {
+    "ValidateFile": {
+      "Type": "Choice",
+      "Comment": "A Choice, not a Lambda. The three checks the brief asks for are all expressible against the event the EventBridge rule delivers, so a function would add a runtime to evaluate three conditions.",
+      "Choices": [
+        {
+          "And": [
+            { "Variable": "$.key", "StringMatches": "raw/orders/*" },
+            { "Variable": "$.key", "StringMatches": "*.csv" },
+            { "Variable": "$.size", "NumericGreaterThan": 0 }
+          ],
+          "Next": "StartCrawler"
+        }
+      ],
+      "Default": "IgnoredFile"
+    },
+
+    "IgnoredFile": {
+      "Type": "Succeed",
+      "Comment": "Not a failure. An object that does not match is simply not this pipeline's input, and paging someone about it would train them to ignore the alert."
+    },
+
+    "StartCrawler": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+      "Parameters": { "Name": "${crawler_name}" },
+      "ResultPath": null,
+      "Retry": [
+        {
+          "Comment": "CrawlerRunningException is the transient case that actually happens here - two uploads close together. EntityNotFound is not retried: a missing crawler will still be missing in two seconds.",
+          "ErrorEquals": [
+            "Glue.CrawlerRunningException",
+            "Glue.InternalServiceException",
+            "Glue.OperationTimeoutException"
+          ],
+          "IntervalSeconds": 20,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" }
+      ],
+      "Next": "WaitForCrawler"
+    },
+
+    "WaitForCrawler": {
+      "Type": "Wait",
+      "Comment": "startCrawler returns immediately, so the workflow polls. Thirty seconds because a crawl of this lake takes about 45; polling faster would just bill more GetCrawler calls to learn the same thing.",
+      "Seconds": 30,
+      "Next": "GetCrawlerStatus"
+    },
+
+    "GetCrawlerStatus": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
+      "Parameters": { "Name": "${crawler_name}" },
+      "ResultPath": "$.crawler",
+      "Retry": [
+        {
+          "ErrorEquals": ["Glue.InternalServiceException", "Glue.OperationTimeoutException"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" }
+      ],
+      "Next": "CrawlerFinished"
+    },
+
+    "CrawlerFinished": {
+      "Type": "Choice",
+      "Comment": "READY means the crawl stopped, not that it worked - so the last crawl's own status is checked before the ETL is allowed to start. This is the dependency the brief asks for: ETL must not begin on a catalog the crawler failed to update.",
+      "Choices": [
+        {
+          "And": [
+            { "Variable": "$.crawler.Crawler.State", "StringEquals": "READY" },
+            { "Variable": "$.crawler.Crawler.LastCrawl.Status", "StringEquals": "SUCCEEDED" }
+          ],
+          "Next": "RunGlueETL"
+        },
+        {
+          "Variable": "$.crawler.Crawler.State",
+          "StringEquals": "READY",
+          "Next": "NotifyFailure"
+        }
+      ],
+      "Default": "WaitForCrawler"
+    },
+
+    "RunGlueETL": {
+      "Type": "Task",
+      "Comment": ".sync blocks until the job reaches a terminal state, so no polling loop is needed here - the Glue integration provides what the crawler API does not.",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${job_name}",
+        "Arguments": {
+          "--database.$": "$.database"
+        }
+      },
+      "ResultPath": "$.etl",
+      "Retry": [
+        {
+          "Comment": "Transient service errors only. A data or logic failure is deterministic - retrying it bills three times to fail three times, and Phase 3 set max_retries=0 on the job itself for the same reason.",
+          "ErrorEquals": [
+            "Glue.ConcurrentRunsExceededException",
+            "Glue.InternalServiceException",
+            "Glue.OperationTimeoutException"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" }
+      ],
+      "Next": "NotifySuccess"
+    },
+
+    "NotifySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${topic_arn}",
+        "Subject": "retail pipeline: succeeded",
+        "Message.$": "States.Format('Arrival {} ({} bytes) crawled and processed. The ETL routes valid rows to curated/ and rejected rows to quarantine/ with a reason; see its reconciliation in CloudWatch.', $.key, $.size)"
+      },
+      "End": true
+    },
+
+    "NotifyFailure": {
+      "Type": "Task",
+      "Comment": "Every Catch lands here, so one notification path covers crawler, status and ETL failures alike.",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${topic_arn}",
+        "Subject": "retail pipeline: FAILED",
+        "Message.$": "States.Format('Arrival {} failed. Error: {}', $.key, States.JsonToString($.error))"
+      },
+      "Next": "PipelineFailed"
+    },
+
+    "PipelineFailed": {
+      "Type": "Fail",
+      "Comment": "The execution must end failed after notifying, or a caught error would report success and the console history would be misleading.",
+      "Error": "PipelineFailed",
+      "Cause": "A stage failed after its retries were exhausted. See the notification and the execution history."
+    }
+  }
+}
