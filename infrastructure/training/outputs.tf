@@ -27,3 +27,14 @@ output "glue_job_name" {
   description = "Run with: ./scripts/de.sh runjob"
   value       = aws_glue_job.curated_sales.name
 }
+
+output "redshift_workgroup" {
+  description = "Query with: aws redshift-data execute-statement --workgroup-name <this>"
+  value       = aws_redshiftserverless_workgroup.warehouse.workgroup_name
+}
+
+output "redshift_database" {
+  description = "Database inside the Redshift Serverless namespace."
+  value       = aws_redshiftserverless_namespace.warehouse.db_name
+}
+

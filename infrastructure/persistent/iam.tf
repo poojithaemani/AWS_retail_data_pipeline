@@ -313,6 +313,41 @@ data "aws_iam_policy_document" "redshift_access" {
       "arn:aws:glue:${var.region}:${local.account_id}:table/${var.glue_database}/*",
     ]
   }
+
+  # Asking Lake Formation for credentials. Added in Phase 7 after Spectrum
+  # failed with the Lake Formation grants already in place.
+  #
+  # The same pairing the Glue role needed in Phase 6, and finding it again here
+  # is the useful part: it is a property of the GOVERNED PATH, not of Glue. Any
+  # principal reading a Lake Formation table through the catalog needs both
+  # halves, and they fail at different stages with different messages.
+  #
+  # The two failures, in order, each after fixing only the previous one:
+  #
+  #   no grant, no action    AccessDeniedException from glue -
+  #                          Insufficient Lake Formation permission(s) on orders_raw
+  #   grant, no action       error getting AWS credentials: ... is not authorized
+  #                          to perform: lakeformation:GetDataAccess (code 9000)
+  #
+  # A Lake Formation grant says the principal MAY read the table. This action
+  # lets it ask for the credentials that make the read possible. Neither implies
+  # the other, and they are configured in different systems - which is exactly
+  # why the distinction is easy to miss until something refuses.
+  #
+  # Worth contrasting with COPY, which needed none of this: COPY reads S3
+  # directly under the statements above it in this policy, so Lake Formation is
+  # never consulted. Same bytes, same role, two routes, different requirements.
+  #
+  # resources = ["*"] because the API takes no resource ARN. The access control
+  # lives in the Lake Formation grants - currently SELECT and DESCRIBE on three
+  # named tables in training_db - not here; this statement only permits the
+  # question to be asked. It mirrors the identical statement on the Glue role.
+  statement {
+    sid       = "LakeFormationCredentialVending"
+    effect    = "Allow"
+    actions   = ["lakeformation:GetDataAccess"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "redshift_access" {
