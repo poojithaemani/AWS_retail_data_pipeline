@@ -228,3 +228,42 @@ def test_the_step_functions_role_is_scoped_to_named_resources(terraform: str) ->
 def test_standard_workflow_so_the_execution_history_survives(terraform: str) -> None:
     """Express keeps no console history, and the history is the deliverable."""
     assert 'type = "STANDARD"' in terraform
+
+
+def test_a_failed_execution_alarms_independently_of_the_workflow() -> None:
+    """The workflow cannot be the only thing that reports the workflow failing.
+
+    The state machine publishes to SNS on both outcomes, but only from inside a
+    running execution. A failure that stops the workflow starting - a disabled
+    rule, a lost permission, Lake Formation grants not re-applied after teardown -
+    notifies nobody. That last case has happened three times in this project.
+
+    So the alarm watches the Step Functions service metric rather than the
+    workflow's own opinion of itself.
+    """
+    body = (REPO_ROOT / "infrastructure" / "training" / "monitoring.tf").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'resource "aws_cloudwatch_metric_alarm"' in body, "no failure alarm defined"
+
+    # Whitespace-insensitive: `terraform fmt` realigns the `=` whenever a longer
+    # attribute name is added, and a test that breaks on formatting is a test
+    # people learn to ignore.
+    def has(attr: str, value: str) -> bool:
+        return re.search(rf'{attr}\s*=\s*{re.escape(value)}', body) is not None
+
+    assert has("metric_name", '"ExecutionsFailed"')
+    assert has("namespace", '"AWS/States"')
+
+    # Sum, not Average: one failure inside a window of successes still matters.
+    assert has("statistic", '"Sum"')
+    assert has("threshold", "0")
+    assert has("comparison_operator", '"GreaterThanThreshold"')
+
+    # An event-driven pipeline is idle most of the time. Alarming on quiet is how
+    # an alert gets muted.
+    assert has("treat_missing_data", '"notBreaching"')
+
+    # It must actually notify somewhere.
+    assert "alarm_actions" in body and "aws_sns_topic.pipeline.arn" in body
