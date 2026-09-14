@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="architecture" name="Architecture">
-        <mxGraphModel dx="560" dy="636" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="950" math="0" shadow="0">
+        <mxGraphModel dx="958" dy="651" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="950" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -25,7 +25,7 @@
                 <mxCell id="b5" value="SERVE &amp;#8212; ANALYTICS &amp;amp; WAREHOUSE &amp;#183; Phase 7" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#6C8EBF;verticalAlign=top;align=left;spacingLeft=12;spacingTop=4;fontSize=11;fontStyle=1;fontColor=#2E5B8A;opacity=50;" parent="1" vertex="1">
                     <mxGeometry x="60" y="602" width="1180" height="118" as="geometry"/>
                 </mxCell>
-                <mxCell id="b6" value="GOVERNANCE &amp;#183; ORCHESTRATION &amp;#183; MONITORING &amp;#183; Phase 6, 8" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#999999;verticalAlign=top;align=left;spacingLeft=12;spacingTop=4;fontSize=11;fontStyle=1;fontColor=#666666;opacity=50;" parent="1" vertex="1">
+                <mxCell id="b6" value="GOVERNANCE &amp;#183; ORCHESTRATION &amp;#183; MONITORING &amp;#183; Phase 6, 8-9" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#999999;verticalAlign=top;align=left;spacingLeft=12;spacingTop=4;fontSize=11;fontStyle=1;fontColor=#666666;opacity=50;" parent="1" vertex="1">
                     <mxGeometry x="60" y="730" width="1180" height="118" as="geometry"/>
                 </mxCell>
                 <mxCell id="src" value="Source systems&lt;br&gt;&lt;i&gt;seeded generator&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=11;" parent="1" vertex="1">
@@ -52,14 +52,11 @@
                 <mxCell id="glueetl" value="Glue PySpark ETL&lt;br&gt;&lt;i&gt;job bookmarks&lt;/i&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.glue;fillColor=#8C4FFF;" parent="1" vertex="1">
                     <mxGeometry x="340" y="356" width="66" height="66" as="geometry"/>
                 </mxCell>
-                <mxCell id="stages" value="extract &amp;#8594; validate &amp;#8594; clean &amp;#8594; deduplicate&lt;br&gt;&amp;#8594; transform &amp;#8594; enrich &amp;#8594; write_output" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#8C4FFF;fontSize=11;dashed=1;" parent="1" vertex="1">
+                <mxCell id="stages" value="extract → deduplicate → clean → validate&lt;br&gt;→ enrich → transform → write_output" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#8C4FFF;fontSize=11;dashed=1;" parent="1" vertex="1">
                     <mxGeometry x="470" y="364" width="330" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="s3proc" value="S3&lt;br&gt;&lt;b&gt;processed/&lt;/b&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;fillColor=#7AA116;" parent="1" vertex="1">
-                    <mxGeometry x="880" y="356" width="66" height="66" as="geometry"/>
-                </mxCell>
-                <mxCell id="dq" value="Glue Data Quality&lt;br&gt;&lt;i&gt;DQDL ruleset&lt;/i&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.glue;fillColor=#8C4FFF;" parent="1" vertex="1">
-                    <mxGeometry x="340" y="486" width="66" height="66" as="geometry"/>
+                <mxCell id="dq" value="Glue Data Quality&lt;br&gt;&lt;i&gt;DQDL &amp;#183; on demand&lt;/i&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.glue;fillColor=#8C4FFF;" parent="1" vertex="1">
+                    <mxGeometry x="140" y="495" width="66" height="66" as="geometry"/>
                 </mxCell>
                 <mxCell id="s3cur" value="S3&lt;br&gt;&lt;b&gt;curated/sales/&lt;/b&gt;&lt;br&gt;&lt;i&gt;Parquet&lt;/i&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;fillColor=#7AA116;" parent="1" vertex="1">
                     <mxGeometry x="580" y="486" width="66" height="66" as="geometry"/>
@@ -68,12 +65,12 @@
                     <mxGeometry x="820" y="486" width="66" height="66" as="geometry"/>
                 </mxCell>
                 <mxCell id="sns" value="SNS&lt;br&gt;&lt;i&gt;notify&lt;/i&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.sns;fillColor=#E7157B;" parent="1" vertex="1">
-                    <mxGeometry x="1040" y="486" width="66" height="66" as="geometry"/>
+                    <mxGeometry x="1100" y="752" width="66" height="66" as="geometry"/>
                 </mxCell>
                 <mxCell id="redshift" value="Redshift Serverless&lt;br&gt;&lt;i&gt;star schema&lt;/i&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.redshift;fillColor=#8C4FFF;" parent="1" vertex="1">
                     <mxGeometry x="580" y="624" width="66" height="66" as="geometry"/>
                 </mxCell>
-                <mxCell id="rsnote" value="COPY from curated/. Read-only IAM: GetObject on&lt;br&gt;curated/*, kms:Decrypt, and catalog metadata only." style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#666666;" parent="1" vertex="1">
+                <mxCell id="rsnote" value="Two read paths. COPY loads curated/ into the star schema.&lt;br&gt;Spectrum reads the same files through the catalog, vended by Lake Formation." style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#666666;" parent="1" vertex="1">
                     <mxGeometry x="700" y="636" width="380" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="lf" value="Lake Formation&lt;br&gt;&lt;i&gt;3 personas&lt;/i&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lake_formation;fillColor=#DD344C;" parent="1" vertex="1">
@@ -85,7 +82,7 @@
                 <mxCell id="sfn" value="Step Functions&lt;br&gt;&lt;i&gt;retry / catch&lt;/i&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.step_functions;fillColor=#E7157B;" parent="1" vertex="1">
                     <mxGeometry x="650" y="752" width="66" height="66" as="geometry"/>
                 </mxCell>
-                <mxCell id="cw" value="CloudWatch&lt;br&gt;&lt;i&gt;metrics / logs&lt;/i&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch_2;fillColor=#E7157B;" parent="1" vertex="1">
+                <mxCell id="cw" value="CloudWatch&lt;br&gt;&lt;i&gt;ExecutionsFailed alarm&lt;/i&gt;" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch_2;fillColor=#E7157B;" parent="1" vertex="1">
                     <mxGeometry x="880" y="752" width="66" height="66" as="geometry"/>
                 </mxCell>
                 <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;" parent="1" source="src" target="s3raw" edge="1">
@@ -103,20 +100,21 @@
                 <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;" parent="1" source="catalog" target="glueetl" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;" parent="1" source="glueetl" target="s3proc" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
+                <mxCell id="e8" value="PASS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#82B366;fontColor=#3C6B3C;" parent="1" source="glueetl" target="s3cur" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="373" y="459"/>
+                            <mxPoint x="613" y="459"/>
+                        </Array>
+                    </mxGeometry>
                 </mxCell>
-                <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;" parent="1" source="s3proc" target="dq" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="e8" value="PASS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#82B366;fontColor=#3C6B3C;" parent="1" source="dq" target="s3cur" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="e9" value="FAIL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#B85450;fontColor=#B85450;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="dq" target="s3quar" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#B85450;" parent="1" source="s3quar" target="sns" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
+                <mxCell id="e9" value="FAIL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#B85450;fontColor=#B85450;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="glueetl" target="s3quar" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="373" y="459"/>
+                            <mxPoint x="853" y="459"/>
+                        </Array>
+                    </mxGeometry>
                 </mxCell>
                 <mxCell id="e11" value="COPY" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;" parent="1" source="s3cur" target="redshift" edge="1">
                     <mxGeometry relative="1" as="geometry">
@@ -144,6 +142,33 @@
                         <mxPoint y="-12" as="offset"/>
                     </mxGeometry>
                 </mxCell>
+                <mxCell id="e17" value="DQDL on orders_raw, products_raw" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#8C4FFF;fontColor=#8C4FFF;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="dq" target="catalog" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="173" y="310"/>
+                            <mxPoint x="573" y="310"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e18" value="success / failure" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#E7157B;fontColor=#E7157B;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="sfn" target="sns" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="683" y="742"/>
+                            <mxPoint x="1133" y="742"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e19" value="alarm" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#E7157B;fontColor=#E7157B;" parent="1" source="cw" target="sns" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e20" value="Spectrum" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#8C4FFF;fontColor=#8C4FFF;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="catalog" target="redshift" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="440" y="261"/>
+                            <mxPoint x="440" y="657"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
                 <mxCell id="legend" value="&lt;b&gt;Legend&lt;/b&gt;&amp;nbsp;&amp;nbsp;solid = data flow&amp;nbsp;&amp;nbsp;&amp;#183;&amp;nbsp;&amp;nbsp;dashed = control, governance, monitoring&amp;nbsp;&amp;nbsp;&amp;#183;&amp;nbsp;&amp;nbsp;&lt;font color=&quot;#7AA116&quot;&gt;&amp;#9632;&lt;/font&gt; S3 storage&amp;nbsp;&amp;nbsp;&lt;font color=&quot;#8C4FFF&quot;&gt;&amp;#9632;&lt;/font&gt; analytics&amp;nbsp;&amp;nbsp;&lt;font color=&quot;#E7157B&quot;&gt;&amp;#9632;&lt;/font&gt; integration / monitoring&amp;nbsp;&amp;nbsp;&lt;font color=&quot;#DD344C&quot;&gt;&amp;#9632;&lt;/font&gt; governance&lt;br&gt;Out of scope: Apache Iceberg, CDC / DMS, cross-account Lake Formation, streaming." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CCCCCC;align=left;spacingLeft=10;fontSize=10;fontColor=#666666;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="60" y="862" width="1180" height="50" as="geometry"/>
                 </mxCell>
@@ -151,7 +176,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="terraform-layers" name="Terraform Layers">
-        <mxGraphModel dx="560" dy="636" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1150" pageHeight="800" math="0" shadow="0">
+        <mxGraphModel dx="958" dy="651" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1150" pageHeight="800" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -165,7 +190,7 @@
                     <mxGeometry x="440" y="90" width="280" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="pbox" value="&lt;b&gt;infrastructure/persistent/&lt;/b&gt;&amp;nbsp;&amp;nbsp;NEVER destroyed&amp;nbsp;&amp;nbsp;&amp;#183;&amp;nbsp;&amp;nbsp;~$1/month&amp;nbsp;&amp;nbsp;&amp;#183;&amp;nbsp;&amp;nbsp;25 resources" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontSize=12;opacity=40;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="210" width="500" height="330" as="geometry"/>
+                    <mxGeometry x="40" y="210" width="500" height="480" as="geometry"/>
                 </mxCell>
                 <mxCell id="p1" value="KMS CMK + alias + key policy&lt;br&gt;&lt;i&gt;rotation enabled&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" parent="1" vertex="1">
                     <mxGeometry x="60" y="255" width="215" height="55" as="geometry"/>
@@ -185,11 +210,20 @@
                 <mxCell id="p6" value="Budget: $50 MONTHLY&lt;br&gt;&lt;i&gt;backup guardrail&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" parent="1" vertex="1">
                     <mxGeometry x="300" y="405" width="215" height="55" as="geometry"/>
                 </mxCell>
-                <mxCell id="pn" value="Survives every teardown. Holds the data and the identities Lake Formation grants against." style="text;html=1;align=center;fontSize=11;fontColor=#666666;" parent="1" vertex="1">
-                    <mxGeometry x="60" y="480" width="455" height="30" as="geometry"/>
+                <mxCell id="p7" value="Lake Formation account config&lt;br&gt;&lt;i&gt;data lake settings + registered location&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="480" width="215" height="55" as="geometry"/>
                 </mxCell>
-                <mxCell id="tbox" value="&lt;b&gt;infrastructure/training/&lt;/b&gt;&amp;nbsp;&amp;nbsp;destroyed every session&amp;nbsp;&amp;nbsp;&amp;#183;&amp;nbsp;&amp;nbsp;$0 idle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontSize=12;opacity=40;" parent="1" vertex="1">
-                    <mxGeometry x="600" y="210" width="470" height="330" as="geometry"/>
+                <mxCell id="p8" value="S3 EventBridge notification&lt;br&gt;&lt;i&gt;what makes Phase 8 event-driven&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="480" width="215" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="p9" value="S3 lifecycle rules&lt;br&gt;&lt;i&gt;derived prefixes only &amp;#183; raw/ never expires&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="555" width="215" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="pn" value="Survives every teardown. Holds the data and the identities Lake Formation grants against." style="text;html=1;align=center;fontSize=11;fontColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="630" width="455" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="tbox" value="&lt;b&gt;infrastructure/training/&lt;/b&gt;&amp;nbsp;&amp;nbsp;destroyed every session&amp;nbsp;&amp;nbsp;&amp;#183;&amp;nbsp;&amp;nbsp;$0 idle&amp;nbsp;&amp;nbsp;&amp;#183;&amp;nbsp;&amp;nbsp;33 resources" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontSize=12;opacity=40;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="210" width="470" height="480" as="geometry"/>
                 </mxCell>
                 <mxCell id="t1" value="Glue Catalog database&lt;br&gt;&lt;i&gt;training_db&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" parent="1" vertex="1">
                     <mxGeometry x="620" y="255" width="205" height="55" as="geometry"/>
@@ -200,11 +234,23 @@
                 <mxCell id="t3" value="CloudWatch log group&lt;br&gt;&lt;i&gt;3-day retention&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" parent="1" vertex="1">
                     <mxGeometry x="620" y="330" width="205" height="55" as="geometry"/>
                 </mxCell>
-                <mxCell id="t4" value="&lt;i&gt;Later phases:&lt;/i&gt;&lt;br&gt;crawlers, jobs, DQ rulesets,&lt;br&gt;Redshift, Step Functions, SNS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;dashed=1;fontColor=#999999;" parent="1" vertex="1">
+                <mxCell id="t4" value="Glue crawler + PySpark ETL job&lt;br&gt;&lt;i&gt;script, package and config on S3&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" parent="1" vertex="1">
                     <mxGeometry x="845" y="330" width="205" height="55" as="geometry"/>
                 </mxCell>
+                <mxCell id="t5" value="Glue Data Quality rulesets&lt;br&gt;&lt;i&gt;orders_raw &amp;#183; products_raw&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="405" width="205" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="t6" value="Lake Formation grants + LF-Tag&lt;br&gt;&lt;i&gt;rebuilt every session &amp;#183; D24&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="845" y="405" width="205" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="t7" value="EventBridge rule &amp;#8594; Step Functions&lt;br&gt;&lt;i&gt;SNS topic &amp;#183; ExecutionsFailed alarm&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="480" width="205" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="t8" value="Redshift Serverless&lt;br&gt;&lt;i&gt;namespace + workgroup, gated&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="845" y="480" width="205" height="55" as="geometry"/>
+                </mxCell>
                 <mxCell id="tn" value="Creates no buckets, keys or roles.&lt;br&gt;`de.sh down` destroys exactly this, and nothing else." style="text;html=1;align=center;fontSize=11;fontColor=#666666;" parent="1" vertex="1">
-                    <mxGeometry x="620" y="470" width="430" height="40" as="geometry"/>
+                    <mxGeometry x="620" y="620" width="430" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="esp" value="holds state" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;fontSize=10;" parent="1" source="sb" target="pbox" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
@@ -216,7 +262,7 @@
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="tf" value="A single state file would force a choice: destroy the KMS key that decrypts yesterday&#39;s data, or protect so much that the teardown stops being meaningful." style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#666666;fontStyle=2" parent="1" vertex="1">
-                    <mxGeometry x="40" y="580" width="820" height="36" as="geometry"/>
+                    <mxGeometry x="40" y="730" width="820" height="36" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
