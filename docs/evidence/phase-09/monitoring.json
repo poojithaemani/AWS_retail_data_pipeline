@@ -1,0 +1,39 @@
+{
+  "alarm": {
+    "AlarmName": "de-training-pipeline-execution-failed",
+    "Namespace": "AWS/States",
+    "MetricName": "ExecutionsFailed",
+    "Statistic": "Sum",
+    "Period": 300,
+    "EvaluationPeriods": 1,
+    "Threshold": 0.0,
+    "ComparisonOperator": "GreaterThanThreshold",
+    "TreatMissingData": "notBreaching",
+    "StateValue": "ALARM",
+    "StateReason": "Threshold Crossed: 1 datapoint [1.0 (10/09/26 17:33:00)] was greater than the threshold (0.0)."
+  },
+  "alarm_actions": [
+    "arn:aws:sns:us-east-2:749185461065:de-training-pipeline-events"
+  ],
+  "state_history": [
+    {
+      "at": "2026-09-10 10:04:28.148000-07:00",
+      "from": "INSUFFICIENT_DATA",
+      "to": "OK",
+      "reason": "Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NonBreaching]."
+    },
+    {
+      "at": "2026-09-10 10:38:28.149000-07:00",
+      "from": "OK",
+      "to": "ALARM",
+      "reason": "Threshold Crossed: 1 datapoint [1.0 (10/09/26 17:33:00)] was greater than the threshold (0.0)."
+    }
+  ],
+  "trigger": {
+    "what": "A Step Functions execution failed because the Lake Formation pipeline grants were not re-applied after teardown.",
+    "crawler_state": "READY",
+    "crawler_last_crawl": "FAILED",
+    "crawler_error": "Insufficient Lake Formation permission(s): Required Describe on training_db (Database name: training_db) (Service: AWSGlue; Status Code: 400; Error Code: AccessDeniedException; Request ID: 1a3764ae-8e15-4de2-8956-9e5212ef9727; Proxy: null). For more information, see Setting up IAM Permissions in the Developer Guide (http://docs.aws.amazon.com/glue/latest/dg/getting-started-access.html).",
+    "why_this_matters": "This is the silent-failure class the alarm exists for: the workflow notified from inside its own execution, but a failure that prevented the workflow starting at all would not have. The alarm watches the AWS/States service metric instead, so it fires either way."
+  }
+}
