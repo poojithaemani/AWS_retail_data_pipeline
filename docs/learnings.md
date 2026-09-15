@@ -13,6 +13,76 @@ Each entry answers four things:
 
 ---
 
+## Index
+
+Ten phases, roughly 1,600 lines. If you are reading selectively, the failures
+are the useful part — they are where the reasoning is visible.
+
+### By phase
+
+| Phase | Focus | The interesting failure |
+| --- | --- | --- |
+| [0](#phase-0--foundation--guardrails) | Foundation, guardrails, teardown proof | A comma in an IAM tag failed an apply at 22 of 25 resources |
+| [1](#phase-1--data-lake--ingestion) | Lake layout, partitioning, formats | Over-partitioning measured, not assumed |
+| [2](#phase-2--catalog--discovery) | Crawlers, schema drift, publication | Five failures, four of which reported SUCCESS |
+| [3](#phase-3--transformation-glue-pyspark-etl) | PySpark ETL, orphan rejection | `archive_file` shipped a package with no package directory |
+| [4](#phase-4--production-hardening--incremental) | Bookmarks, incremental processing | A bookmarked read returns no schema, not just no rows |
+| [5](#phase-5--data-quality--quarantine) | DQDL, quarantine, Athena cost | Spark ignores `skip.header.line.count`; Athena honours it |
+| [6](#phase-6--governance-lake-formation) | Lake Formation, three personas | Two identical error messages, two different causes |
+| [7](#phase-7--analytical-warehouse-redshift) | Redshift star schema, Spectrum | A column-type error that named a file |
+| [8](#phase-8--orchestration-step-functions--eventbridge) | EventBridge, Step Functions | An event pattern that matched almost everything |
+| [9](#phase-9--monitoring--failure-handling) | CloudWatch alarm on `ExecutionsFailed` | The workflow was the only thing reporting the workflow |
+
+### The five worth reading first
+
+**An S3 lifecycle rule deleted the raw layer** —
+[troubleshooting.md, Phase 7](troubleshooting.md#an-s3-lifecycle-rule-deleted-the-raw-layer).
+A rule with an empty prefix filter did exactly what it was
+configured to do. The bucket policy could not prevent it, because it denies
+deletion by *principals* and lifecycle expiry has no principal. Recovered
+byte-for-byte because the generator is seeded.
+
+**A Lake Formation grant is not permission to read** — Phase 6, confirmed again
+in Phase 7. Reading a governed table needs both an LF grant and the IAM action
+`lakeformation:GetDataAccess`. Found by fixing one missing thing at a time, so
+the project can say which was necessary rather than which combination worked.
+
+**An EventBridge pattern that looked precise matched almost everything** —
+Phase 8. An array of matchers is an OR, not an AND. Caught with
+`test-event-pattern` before applying; the pipeline would otherwise have
+triggered on its own output.
+
+**Duplicates were a reconciliation category, not a discrepancy** — Phase 4. The
+identity `source == valid + rejected` is false whenever the input contains
+duplicates, and the job failed itself rather than passing quietly. The fix
+reports the number instead of absorbing it.
+
+**Twice the reporting was wrong rather than the system** — Phase 7 and Phase 8.
+A sort-key comparison implied a speedup the data did not support, and a first
+task attempt was labelled a retry. Both would have claimed evidence that did not
+exist. Both were caught by checking the underlying data.
+
+### If you are looking for something specific
+
+| Topic | Where |
+| --- | --- |
+| Why raw is immutable, and how that was nearly lost | Phase 1 *Concepts*; [troubleshooting.md, Phase 7](troubleshooting.md#an-s3-lifecycle-rule-deleted-the-raw-layer) |
+| Orphan foreign keys: inner join vs left join vs reject | Phase 3 *Concepts* |
+| Reconciliation identity and why the job fails itself | Phase 3, Phase 4 |
+| Bookmarks, and why dimensions must never be bookmarked | Phase 4 *Concepts* |
+| Partition pruning and scan cost, measured | Phase 5 |
+| Column-level access, and what `SELECT *` returns | Phase 6 |
+| COPY vs Spectrum: two routes to the same bytes | Phase 7 *Concepts* |
+| Distribution and sort keys, including the skew trade | Phase 7 |
+| Retry vs Catch: transient against deterministic | Phase 8 |
+| Why there is no `Parallel` state | Phase 8; `capstone.md` §7 |
+
+Design reasoning lives in [decisions.md](decisions.md) (D1–D27). Incident
+write-ups with full diagnosis are in [troubleshooting.md](troubleshooting.md).
+
+
+---
+
 ## Phase 0 — Foundation & guardrails
 
 **Built**
@@ -1358,6 +1428,47 @@ The state machine received exactly what the input transformer promised:
 raw/orders went 44 -> 45 partitions: the arrival was appended, nothing
 overwritten, and the immutability rule held throughout.
 
+**Why there is no `Parallel` state**
+
+Parallel processing is on the Day 8 topic list, and this workflow does not use
+it. That is a decision rather than an omission, so it is worth writing down.
+
+The brief separates two things. The topics say *"Developers should understand"*;
+the assignment says *"Implement"* and then gives a diagram that is strictly
+linear - file arrival, validate, crawl, ETL, quality, publish or quarantine,
+notify. Every arrow in it is a real dependency.
+
+In this pipeline they genuinely are dependencies, not habit:
+
+- the crawler must finish before the ETL, because the ETL reads the catalog the
+  crawler updates. Starting them together would race a job against the schema
+  it depends on.
+- the ETL must finish before its outcome can be notified, because the outcome
+  *is* the notification's content.
+- the single crawler already fans out internally across three S3 targets, so
+  wrapping it in a `Parallel` state would parallelise one API call.
+
+There is no branch here that would still be correct in either order, which is
+the test for whether concurrency is real or decorative.
+
+*Where it would earn its place.* A `Parallel` state is worth having when
+branches share no dependency and each is self-contained:
+
+- fanning out ingestion across several independent source systems - orders from
+  one vendor, returns from another - where no branch reads what another writes
+- running an independent side-effect alongside the main path: publishing a
+  catalog entry, writing an audit record, or notifying a downstream team while
+  the load continues
+- processing partitions or regions concurrently where each is complete in
+  itself and failure of one does not invalidate the others
+
+The useful question is not "can these run at once" but "would the result be the
+same in either order, and does one branch failing leave the other meaningful".
+Here the answer is no on both counts. Adding a `Parallel` state anyway would
+make the workflow harder to read and no faster, and the execution history - the
+actual deliverable of this phase - would show a fan-out that fans out to one
+thing.
+
 **What is NOT orchestrated, stated rather than implied**
 
 The brief's diagram ends `... -> Data Quality -> PASS/FAIL -> Publish ->
@@ -1383,3 +1494,84 @@ and `lf_pipeline_grants_enabled`. The plan became 16.
 **Cost:** three Step Functions executions (standard workflows are effectively
 free at this volume), three crawls and three ETL runs - roughly $0.25. The
 retry demonstration cost one extra crawl and was worth it.
+---
+
+## Phase 9 — Monitoring & Failure Handling
+
+**Built**
+
+One resource: a CloudWatch metric alarm on the Step Functions service metric
+`AWS/States` / `ExecutionsFailed`, publishing to the SNS topic Phase 8 already
+created.
+
+    de-training-pipeline-execution-failed
+      Sum over 300s, 1 evaluation period, > 0
+      TreatMissingData: notBreaching
+      -> arn:aws:sns:us-east-2:749185461065:de-training-pipeline-events
+
+No new topic, no new subscription, no dashboard. The phase exists because the
+self-assessment against the brief's rubric found Monitoring & Failure Handling
+to be the one category where the work was genuinely thinner than the topic list
+implies, and this was the specific gap.
+
+**Concepts**
+
+*A workflow cannot be the only thing that reports the workflow failing.* Phase 8
+notified on both outcomes — `NotifySuccess` and `NotifyFailure` both publish to
+SNS — but both publish from *inside* a running execution. Anything that stops an
+execution starting, or stops it reaching either state, notifies nobody. A
+disabled EventBridge rule, a revoked permission, Lake Formation grants not
+re-applied after teardown: all silent.
+
+The alarm watches the service metric instead, so it does not depend on the
+workflow's own opinion of itself.
+
+*`Sum`, not `Average`.* One failure inside a window of successes still matters,
+and an average would dilute it.
+
+*`notBreaching` on missing data.* An event-driven pipeline is idle most of the
+time. An alarm that goes red because nothing happened is an alarm people learn
+to mute.
+
+**Verified on a real failure, not a synthetic one**
+
+The alarm was not asserted into existence and left there. Lake Formation grants
+live in the training layer by design (D24), so teardown destroys them; an
+execution started without re-applying them produced a genuine refusal:
+
+    Crawler:  State=READY   LastCrawl=FAILED
+    error:    Insufficient Lake Formation permission(s):
+              Required Describe on training_db
+              (Service: AWSGlue; Status Code: 400; AccessDeniedException)
+
+and the alarm moved through its expected states:
+
+    10:04:28   INSUFFICIENT_DATA -> OK
+               "1 missing datapoint was treated as [NonBreaching]"
+
+    10:38:28   OK -> ALARM
+               "1 datapoint [1.0] was greater than the threshold (0.0)"
+
+That is precisely the failure class the alarm exists for, and one this project
+had already hit during phases 6-8.
+
+**The same execution proved a second thing**
+
+The workflow reached `CrawlerFinished` and stopped there rather than continuing
+to the ETL, because that Choice state checks `LastCrawl.Status` as well as
+`Crawler.State`. **READY means the crawl stopped, not that it worked** — it is
+also the state after a failed crawl. Without that check the ETL would have run
+against a catalog the crawler had failed to update.
+
+The guard was written in Phase 8 and asserted by
+`tests/test_orchestration.py::test_etl_cannot_start_until_the_crawler_has_actually_succeeded`.
+Phase 9 is where it was observed doing its job on a real failure.
+
+**Evidence** — `docs/evidence/phase-09/`, which is deliberately shaped unlike
+the other packs: Phase 9 produced no pipeline run, so there is no lake or Athena
+capture. `monitoring.json` holds the alarm configuration, its full state
+history, and the crawler error that drove the transition.
+
+**Cost:** one alarm (within the CloudWatch free tier at this count) and the
+crawl that failed. The failure was not staged for the demonstration - it was the
+teardown constraint behaving as designed.

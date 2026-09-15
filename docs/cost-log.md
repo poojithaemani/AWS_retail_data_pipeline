@@ -35,3 +35,5 @@ they recorded an empty account rather than a real session.
 | 2026-09-09 | 08 | $-0.0000005355 | clean |
 | 2026-09-10 | 09 | $0.009996845 | clean |
 | 2026-09-10 | n/a | $-0.0000060783 | clean |
+| 2026-09-14 | n/a | $-0.0000294641 | clean |
+| 2026-09-14 | n/a | $-0.0000349858 | clean |

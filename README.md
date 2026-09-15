@@ -1,218 +1,224 @@
 # AWS Retail Data Pipeline
 
-A production-style data engineering platform on AWS, built on a synthetic
-retail dataset: S3 medallion lake, Glue Crawlers and PySpark ETL, Glue Data
-Quality with quarantine, Athena, Lake Formation governance, a Redshift
-Serverless star schema, and EventBridge/Step Functions orchestration.
+A production-style retail/e-commerce data platform on AWS. Raw CSV deliveries
+land in an immutable S3 lake, are catalogued, transformed by Glue PySpark into a
+curated Parquet fact, governed by Lake Formation, served to Athena and a
+Redshift star schema, and orchestrated end to end by EventBridge and Step
+Functions.
 
-Everything is Terraform-managed and **destroyed at the end of every working
-session**. That constraint is not housekeeping, it is the design driver: it
-forces every resource into version control, makes the whole platform
-rebuildable from an empty account with two commands, and keeps the running cost
-near zero between sessions.
+Built as a nine-phase exercise with one rule that shaped everything: **all
+compute is destroyed at the end of every session, so the evidence has to outlive
+the infrastructure.**
 
-![Architecture](architecture/architecture-diagram.png)
+Start with **[`docs/capstone.md`](docs/capstone.md)** — it walks the whole
+project in fifteen minutes and needs no AWS access.
 
 ---
 
-## Conventions
+## What exists
+
+```
+              daily CSV deliveries
+                       |
+                       v
+            S3  raw/   immutable, append-only
+                       |
+            Glue crawler -> Data Catalog (training_db)
+                       |
+            Glue 5.0 PySpark ETL
+              dedupe -> clean -> validate -> enrich -> transform
+                       |
+          +------------+------------+
+          v                         v
+    curated/sales             quarantine/sales
+    Parquet, y/m/d            with rejection_reason
+          |                         |
+          +------------+------------+
+                       |
+        Athena                Redshift
+        (governed)            COPY + Spectrum
+                       |
+          Lake Formation governs every catalog read
+                       |
+        EventBridge -> Step Functions ties it together
+```
 
 | | |
 | --- | --- |
-| Region | `us-east-2`, pinned in [`config/project.env`](config/project.env) and nowhere else |
-| Resource names | `de-training-*` and `training_db`, exactly as the brief specifies. Account id suffixed only where AWS requires global uniqueness (S3) |
-| Tags / labels | `Project=retail-data-pipeline` - the domain identity, not the exercise |
-| Catalog | `training_db`, with `customers_raw` / `products_raw` / `orders_raw` (brief, p.6-7) |
-| Tags | `Project`, `Layer`, `Phase`, `ManagedBy` on every resource |
-| Glue | 5.0 (Spark 3.5 / Python 3.11) |
-| IaC | Terraform 1.10+, AWS provider 6.x |
-| State | S3 backend with native `use_lockfile` locking, no DynamoDB table |
+| Raw | 15,861 orders, 45 daily partitions, 1,000 customers, 200 products |
+| Curated | 12,060 rows, $10,705,326.72 |
+| Quarantined | 40 rows, all `orphan_product_id` |
+| Warehouse | `fact_orders` + `dim_customer` / `dim_product` / `dim_date` |
+| Tests | 67, none requiring AWS |
+| Total spend | under $2 across all nine phases |
 
-The region deliberately matches the AWS CLI default. A mismatch between
-Terraform's region and the CLI's would make every ad-hoc `aws` command silently
-target the wrong place.
+Every figure above is in `docs/evidence/`, captured while the resources were
+alive and committed before they were destroyed.
 
 ---
 
 ## Layout
 
 ```
-config/            project.env (single source of truth), pipeline config
-src/
-  generate/        seeded synthetic dataset + deliberate-defect injector
-  extract/         source readers
-  transform/       Glue PySpark ETL modules
-  quality/         DQDL rulesets and quarantine logic
-  common/          shared helpers, logging, config loading
-sql/               athena/ and redshift/ DDL and analytical queries
-tests/             pytest, runs without any AWS access
+config/project.env        single source of truth: region, project, TF_VAR_*
 infrastructure/
-  persistent/      NEVER destroyed: KMS, IAM, lake bucket, budgets
-  training/        destroyed every session: Glue, Athena, Redshift, SFN
-scripts/           de.sh dispatcher + teardown verification
-architecture/      retail-data-platform.drawio + architecture-diagram.png
-docs/              capstone, decisions, reference repos, learnings,
-                   cost log, evidence packs
+  persistent/             never destroyed: KMS, IAM, lake bucket, budgets,
+                          Lake Formation registration
+  training/               destroyed every session: Glue, Athena, Redshift,
+                          Step Functions, EventBridge, LF grants
+scripts/de.sh             the only entry point; everything else is called by it
+scripts/                  runners: crawler, ETL, DQ, Athena, Redshift, personas
+sql/athena/               Phase 1-5 queries
+sql/redshift/             Phase 7 star schema: ddl, load, analytics, spectrum
+src/generate/             seeded dataset generator and defect injectors
+src/retail_pipeline/      the ETL transformations (pure PySpark, unit tested)
+tests/                    68 tests, no AWS required
+docs/capstone.md          START HERE - the 15-minute walkthrough
+docs/learnings.md         per-phase write-up, including every failure
+docs/decisions.md         D1-D27, the reasoning behind each choice
+docs/troubleshooting.md   real incidents with diagnosis
+docs/evidence/phase-NN/   captured proof, per phase
+docs/cost-log.md          a teardown row per session
+architecture/             diagram (.drawio, .png) and notes
 ```
 
 ---
 
 ## The two-layer split
 
-The single most important design decision in the repo.
+Terraform is split by **lifecycle**, not by service.
 
-| Layer | Holds | Lifecycle | Cost when idle |
-| --- | --- | --- | --- |
-| `persistent/` | KMS CMK, IAM roles, lake bucket, budgets | created once | ~$1.50/month |
-| `training/` | Glue jobs/crawlers/catalog, Athena workgroup, Redshift, Step Functions, EventBridge, CloudWatch | destroyed every session | $0 |
+| | `persistent/` | `training/` |
+| --- | --- | --- |
+| Lifetime | months | hours |
+| Holds | KMS key, IAM roles, lake bucket, budgets, LF registration | Glue, Athena, Redshift, Step Functions, EventBridge, LF grants |
+| Destroyed by | `nuke` only | `down`, every session |
 
-Splitting by **lifecycle** rather than by service is what makes a routine
-`terraform destroy` safe. A single state file would force a choice between
-destroying the KMS key that decrypts yesterday's data, or protecting so much
-that the teardown stops being meaningful.
+A single state file would have forced a choice between destroying the KMS key
+that decrypts yesterday's data and protecting so much that teardown stopped
+meaning anything.
 
-Three related choices fall out of it:
-
-- **The state bucket is created by `bootstrap`, not by Terraform.** Terraform
-  cannot cleanly own the bucket its own state lives in. One idempotent CLI call
-  avoids the local-state-then-migrate dance entirely.
-- **No NAT Gateway, anywhere.** Nothing in scope needs Glue inside a VPC: Glue
-  reaches S3, the Catalog and Redshift over AWS-managed networking. A NAT
-  Gateway would add ~$33/month for no capability. `de.sh verify` treats the
-  existence of one as a hard failure.
-- **A daily budget, not just a monthly one.** A monthly ceiling is too slow to
-  catch the failure that actually matters here: a session ending with the
-  training layer still standing.
-
-Full reasoning, with alternatives and trade-offs, in
-[`docs/decisions.md`](docs/decisions.md).
+Consequence worth knowing: **Lake Formation grants live in the training layer**,
+so they are destroyed nightly and must be re-applied before the crawler or ETL
+will run. Since `IAM_ALLOWED_PRINCIPALS` was removed in Phase 6, that is not
+optional — the pipeline cannot read its own catalog without them.
 
 ---
 
 ## The session loop
 
 ```bash
-./scripts/de.sh up 03            # 1. create the ephemeral layer
-#    ... phase work ...
-./scripts/de.sh evidence 03      # 2. capture proof to docs/evidence/phase-03/
-git commit -am "phase 3: ..."    # 3. commit
-./scripts/de.sh down             # 4. destroy the ephemeral layer
-./scripts/de.sh verify 03        # 5. prove nothing survived
+./scripts/de.sh up NN        # create the training layer, tagged Phase=NN
+#   ... phase work ...
+./scripts/de.sh evidence NN  # capture proof while it is alive
+git commit                   # the evidence outlives the infrastructure
+./scripts/de.sh down         # destroy everything ephemeral
+./scripts/de.sh verify NN    # prove it, by API call, across four regions
 ```
 
-Step 5 exits non-zero if anything billable is still standing. A session is not
-finished until it is green. `terraform destroy` is a claim;
-[`verify_teardown.sh`](scripts/verify_teardown.sh) is the proof: it asserts by
-live API call across Glue, Step Functions, EventBridge, Kinesis, Redshift,
-Lambda, SNS, CloudWatch, Athena and EC2, sweeps three other regions for strays,
-and appends the day's spend to [`docs/cost-log.md`](docs/cost-log.md).
+`verify` makes ~37 calls and asserts zero project-named resources, then appends
+a row to `docs/cost-log.md`. It takes about two minutes.
 
 ---
 
 ## Getting started
 
 ```bash
-# 1. Dependencies
+# 1. Dependencies: Terraform 1.15+, AWS CLI v2, Python 3.11+, credentials
 py -3 -m pip install -r requirements-dev.txt
 
-# 2. Set the budget alert address (bootstrap refuses to run without it)
-cd infrastructure/persistent && cp terraform.tfvars.example terraform.tfvars && cd -
-#    then set a real address in budget_notification_email
+# 2. Set the budget alert address - bootstrap refuses to run without a real one
+cp infrastructure/persistent/terraform.tfvars.example \
+   infrastructure/persistent/terraform.tfvars
 #    *.tfvars is gitignored, so personal values never reach the repo
 
 # 3. One-time: state bucket, KMS, IAM, lake bucket, budgets
 ./scripts/de.sh bootstrap
 
 # 4. Generate the dataset and load the raw layer
-./scripts/de.sh gen
-./scripts/de.sh up 00
-./scripts/de.sh load csv
+./scripts/de.sh gen --end-date 2026-08-31
+./scripts/de.sh load raw
 
-# 5. Tear it back down
-./scripts/de.sh down && ./scripts/de.sh verify
+# 5. Bring up a phase, work, tear down
+./scripts/de.sh up 03
+./scripts/de.sh crawl && ./scripts/de.sh publish && ./scripts/de.sh runjob
+./scripts/de.sh down && ./scripts/de.sh verify 03
 ```
 
-Run `./scripts/de.sh help` for the full command list. Always drive Terraform
-through `de.sh`, or `source config/project.env` first: a bare `terraform init`
-misses the shared provider cache and drops another ~860 MB into `.terraform/`.
+Run `./scripts/de.sh help` for the full command list. Tests need no AWS:
+
+```bash
+py -3 -m pytest -q
+```
+
+---
+
+## Commands
+
+| | |
+| --- | --- |
+| `bootstrap` | one-time: state bucket + persistent layer |
+| `up [PHASE]` | create the training layer |
+| `gen` / `load` | generate the dataset / upload to `raw/` |
+| `crawl` / `publish` | discover schemas / rename to the graded table names |
+| `runjob` | run the curated-sales Glue ETL |
+| `dq` | evaluate the Glue Data Quality rulesets |
+| `analytics` | Athena queries with bytes-scanned comparisons |
+| `personas` | verify the Lake Formation permission matrix |
+| `warehouse [STAGE]` | Redshift: `ddl`, `load`, `analytics`, `spectrum` |
+| `orphans` / `breakschema` | deliberate defect deliveries |
+| `evidence PHASE` | capture proof of execution |
+| `down` / `verify` | destroy / prove nothing is running |
+| `status` / `plan` / `fmt` | inspect, plan, format |
+| `nuke` | destroy everything, persistent included |
 
 ---
 
 ## Dataset
 
-Synthetic retail, generated locally from a fixed seed so the raw layer is
-reproducible byte-for-byte after any teardown. No public dataset is used, per
-the brief.
+Synthetic, seeded, no Faker. **Reproducibility beats realism**: the raw layer is
+rebuilt after every teardown and must be byte-identical, so the same seed always
+produces the same data.
 
-| Table | Columns | Dev default | Training scale |
-| --- | --- | ---: | ---: |
-| `customers` | customer_id, customer_name, email, country, created_date | 1,000 | 100,000 |
-| `products` | product_id, product_name, category, price | 200 | 5,000 |
-| `orders` | order_id, customer_id, product_id, quantity, order_date, status | 10,000 | 1,000,000 |
+That decision paid for itself when an S3 lifecycle rule deleted the raw layer —
+it was regenerated exactly rather than lost. See `docs/troubleshooting.md`.
 
-Defaults are the development sizes: correctness is proved on a small
-deterministic dataset first. The training-scale figures from the brief are
-passed explicitly when the Spark scaling exercise is reached, so the safe size
-is the one you get by accident.
+Two defect deliveries are permanent parts of `raw/`, because the raw layer holds
+what the source actually sent:
 
-Clean data is written to `data/raw/`; deliberately broken copies go to
-`data/test_fixtures/`. The two are never mixed.
-
-Emitted as CSV, JSON and Parquet of identical data, since the format comparison
-in Phase 1 needs all three. Orders spread across ~30 daily partitions so
-incremental processing has real multi-day history to work with.
-
-[`src/generate/inject_bad_data.py`](src/generate/inject_bad_data.py) then
-injects nine classes of deliberate defect (null customer id, conflicting
-duplicate order ids, negative quantity, orphan customer id, orphan product id,
-malformed date, invalid order status, `UNKNOWN` price, negative price) and
-records every one in `defects.json`. That
-manifest is ground truth: the data quality phase asserts the pipeline
-quarantined *exactly* the rows that were broken, not merely "some".
+- **orphan products** (`2026-09-02`) — 40 orders referencing products that do
+  not exist, which the ETL rejects with a reason
+- **an incremental tranche** (`2026-09-05`) — 2,000 new orders used to prove job
+  bookmarks process only what is new
 
 ---
 
 ## Phases
 
-| Phase | Focus | Rubric |
+| Phase | Focus | Weight |
 | --- | --- | ---: |
-| 0 | Foundation and guardrails | - |
-| 1 | Data lake and ingestion | 10% |
-| 2 | Catalog and discovery | 10% |
-| 3 | Transformation (PySpark ETL) | 20% |
-| 4 | Production hardening and incremental | 10% |
-| 5 | Data quality and quarantine | 10% |
-| 6 | Governance (Lake Formation) | 10% |
-| 7 | Analytical warehouse (Redshift) | 10% |
-| 8 | Orchestration and monitoring | 10% |
+| 0 | Foundation, guardrails, teardown proof | — |
+| 1 | Data lake, partitioning and format benchmarks | 10% |
+| 2 | Catalog, crawlers, schema drift | 10% |
+| 3 | PySpark ETL, orphan rejection, reconciliation | 20% |
+| 4 | Job bookmarks and incremental processing | 10% |
+| 5 | Data quality, quarantine, Athena cost | 10% |
+| 6 | Lake Formation: three personas, column-level access | 10% |
+| 7 | Redshift star schema, COPY vs Spectrum | 10% |
+| 8 | EventBridge and Step Functions, retry and catch | 10% |
 | 9 | Capstone and evidence pack | 10% |
-| - | Out of scope: Iceberg, CDC, cross-account Lake Formation | 0% |
 
-Phases are gated: each has explicit exit criteria, and the next does not start
-until they pass.
-
-- [`docs/capstone.md`](docs/capstone.md) - the target, plus the walkthrough script
-- [`docs/decisions.md`](docs/decisions.md) - every design choice, its alternatives, and the trade-off accepted
-- [`docs/reference-repos.md`](docs/reference-repos.md) - what was taken from the AWS sample repositories, and what was deliberately rejected
-- [`docs/learnings.md`](docs/learnings.md) - the running per-phase write-up
+Out of scope by design: Iceberg, CDC/DMS, cross-account Lake Formation (all
+optional in the brief) and streaming (0% of the rubric, and the only component
+that would run continuously).
 
 ---
 
 ## Cost
 
-| | Per active session |
-| --- | ---: |
-| Glue ETL (2 DPU, ~15 min, 4 runs) | ~$0.90 |
-| Glue crawlers | ~$0.10 |
-| Athena (Parquet + partition pruning) | ~$0.05 |
-| Redshift Serverless (8 RPU, ~1 hr, $0 idle) | ~$2.90 |
-| Step Functions / EventBridge / SNS / CloudWatch | ~$0.05 |
-| S3 + KMS | ~$0.05 |
-| NAT Gateway | $0, designed out |
-| **Total** | **~$4** |
+Under **$2** across all nine phases. The only standing cost is the KMS key
+(~$1/month); everything else exists for minutes at a time.
 
-Idle cost after a verified teardown is a few cents. Guardrails: a $50 monthly
-budget with alerts at 50/80/100% plus a forecast alarm, a $5 daily budget to
-catch a missed teardown the next morning, mandatory project tags, an Athena
-per-query scan ceiling, 7-day lake lifecycle expiry, and the daily spend figure
-appended to `docs/cost-log.md` by `de.sh verify`.
+Guardrails: daily and monthly budget alarms, a 7-day lifecycle on derived
+prefixes (never on `raw/`), no NAT gateway anywhere, and `verify` refusing to
+report clean while anything billable is still running.

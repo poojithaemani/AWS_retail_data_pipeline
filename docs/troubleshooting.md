@@ -227,7 +227,8 @@ worth more than a diagram tab.
 
 ## Phase 1 — data lake and ingestion
 
-_Not started._
+_No incidents._ The partitioning and format work was measured rather than
+debugged; the findings are in `learnings.md`.
 
 ---
 
@@ -355,6 +356,110 @@ the phase already carried more unplanned changes than intended.
 under `docs/evidence/phase-NN/` is only written by phase NN would catch it, and
 is worth adding when the script is fixed properly. Until then, check
 `git status` for modified evidence outside the current phase before committing.
+
+---
+
+## Phase 7 — analytical warehouse (Redshift)
+
+### An S3 lifecycle rule deleted the raw layer
+
+| | |
+| --- | --- |
+| Phase | 07 |
+| Component | S3 / `infrastructure/persistent/lake.tf` |
+| Deliberate? | no (real) |
+| Status | **resolved** — data recovered, rule re-scoped, regression test added |
+
+This is the project's answer to the brief's §7 question, *"what happens when a
+component fails?"* — because here nothing failed. Every component did exactly
+what it was configured to do.
+
+**Symptom** — `raw/` held **2 objects**. It had held 46 in the Phase 4 and
+Phase 5 evidence captures, unchanged through Phase 6. The two survivors were
+the only objects uploaded inside the previous seven days.
+
+**Diagnosis** — the shape of the loss located it before any log was read:
+
+1. The survivors had nothing in common except their upload time. Not a prefix,
+   not a partition, not a file type — only their age. Deletion by a caller
+   would have followed some structure; deletion by *age* is a lifecycle rule.
+2. `lake.tf` carried a single expiration rule with `filter {}` — an empty
+   filter, which means every object in the bucket — and a seven-day expiry
+   (`var.lake_expiration_days`, exported as `7` from `config/project.env`).
+3. Forty-two order partitions plus the customer and product files had aged past
+   seven days. S3 removed them.
+
+**Cause** — the rule was correct and its scope was wrong. `filter {}` is not a
+missing filter; it is a filter that matches everything, and S3 applied it as
+written. The rule was added in Phase 0 carrying the comment *"everything here
+is regenerable from `src/generate` with a fixed seed"*, which was true when it
+was written and quietly stopped being true in Phase 3. From that point `raw/`
+accumulated deliveries the generator does not produce — the orphan-product
+partition, and the Phase 4 incremental tranche — and it was that append-only
+history the bookmark and reconciliation exercises were built on.
+
+**Why the bucket policy did not help, and could not.** The lake bucket carries a
+`DenyRawObjectDeletion` statement refusing `s3:DeleteObject` and
+`s3:DeleteObjectVersion` under `raw/`. It is scoped to *principals*. Lifecycle
+expiry is performed by S3 itself against no principal at all, so the policy
+never evaluates and has nothing to refuse. The raw layer was protected against
+deletion by callers and completely exposed to deletion by configuration — and
+the second is the one that happened.
+
+That distinction is the transferable lesson: an identity-based control and a
+service-performed action do not meet. Immutability that is enforced only in the
+principal dimension is not immutability.
+
+**Recovery — restored, not regenerated.** The local `data/raw/` tree was
+untouched by the incident and was re-synced with `de.sh load`. This matters
+more than it sounds: re-running the generator would have produced the seeded
+30-day dataset (`seed: 20260819`, `end_date: 2026-08-31`) but not the two
+later deliveries, so a regenerated lake would have been internally consistent
+and silently missing the history the incremental exercise depends on. The
+manifest at `data/raw/manifest.json` records a SHA-256 per generated file, so
+the restored files could be compared rather than trusted.
+
+**Validation** — `raw/` returned to exactly its pre-incident size:
+
+    phase-04   46 objects   1,005,136 bytes    before
+    phase-05   46 objects   1,005,136 bytes    before
+    phase-06   46 objects   1,005,136 bytes    after recovery
+    phase-07   46 objects   1,005,136 bytes    after recovery
+
+Byte-identical, not merely the same count. The downstream reconciliation agreed
+independently: the Phase 7 warehouse load reproduced 12,060 curated rows and
+$10,705,326.72, matching Athena to the cent.
+
+**Fix** — expiry now names each derived prefix explicitly. One rule per prefix,
+because an S3 lifecycle rule takes a single prefix:
+
+| Prefix | Expiry |
+| --- | --- |
+| `raw/` | **never** — absent from every expiration rule |
+| `processed/` | `var.lake_expiration_days` (7) |
+| `curated/` | `var.lake_expiration_days` (7) |
+| `quarantine/` | `var.lake_expiration_days` (7) |
+| `temp/` | `var.lake_expiration_days` (7) |
+| `experiments/` | `var.lake_expiration_days` (7) |
+| `athena-results/` | 1 day |
+| incomplete multipart uploads | aborted bucket-wide after 1 day |
+
+The derived rules also expire noncurrent versions after one day. The multipart
+rule is the one remaining `filter {}`, and it is safe bucket-wide because it
+removes only the fragments of uploads that never completed — it cannot touch a
+whole object.
+
+The verbosity is the point. Adding a prefix to that list is a deliberate act,
+whereas `filter {}` silently covers anything anyone creates later.
+
+**Prevention** — `tests/test_repo_hygiene.py::test_no_lifecycle_expiry_can_reach_the_raw_layer`
+parses `lake.tf`, keeps only the rules that actually expire objects, and fails
+if any of them omits a prefix or uses an empty filter. It also asserts that the
+literal `"raw/"` never appears in a lifecycle rule. The
+`abort_incomplete_multipart_upload` rule is exempt by name for the reason
+above, being the one rule that expires nothing. The test reads the Terraform
+source rather than any deployed state, so it guards the configuration at commit
+time — before an apply can act on it.
 
 ---
 

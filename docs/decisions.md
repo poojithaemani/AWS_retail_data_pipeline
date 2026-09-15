@@ -693,3 +693,35 @@ removed IAM_ALLOWED_PRINCIPALS.
 The cost of the approach is two extra failed executions, about four seconds of
 Redshift time. The alternative is a working system nobody understands, which is
 the expensive kind of working.
+---
+
+## D28 — S3 lifecycle expiration is scoped to derived data
+
+`raw/` is the durable layer and carries no expiration rule of any kind. Every
+other prefix in the lake is derived from it and may be expired on a schedule,
+because anything expired there can be rebuilt by re-running the pipeline.
+
+The rules are written one prefix at a time - `processed/`, `curated/`,
+`quarantine/`, `temp/`, `experiments/` at `var.lake_expiration_days`, and
+`athena-results/` at one day - rather than as a single bucket-wide filter. An S3
+lifecycle rule takes one prefix, so this is more verbose; the verbosity is the
+control. Adding a prefix to that list is a deliberate act, whereas `filter {}`
+silently covers anything anyone creates later, including prefixes that did not
+exist when the rule was written.
+
+This is not a hypothetical preference. A bucket-wide `filter {}` with a
+seven-day expiry deleted the raw layer once, leaving the two objects young
+enough to survive the window - see `troubleshooting.md`, Phase 7. The rule was
+not defective; its scope was.
+
+**A bucket policy is not a substitute.** The lake carries
+`DenyRawObjectDeletion`, refusing `s3:DeleteObject` under `raw/`, and it did not
+prevent the loss and could not have. That statement is scoped to *principals*;
+lifecycle expiry is performed by S3 against no principal, so the policy is never
+evaluated. The two controls operate in different dimensions and do not compose:
+scoping the lifecycle rule correctly is the only thing that protects `raw/` from
+expiry.
+
+The one remaining bucket-wide rule aborts incomplete multipart uploads after a
+day. It is exempt because it removes only the fragments of uploads that never
+completed and cannot remove a whole object - it expires nothing.
