@@ -183,43 +183,52 @@ routine operation rather than a risky one.
 erDiagram
     dim_customer ||--o{ fact_orders : "customer_id"
     dim_product  ||--o{ fact_orders : "product_id"
-    dim_date     ||--o{ fact_orders : "date_key"
+    dim_date     ||--o{ fact_orders : "DATE(order_date) = date_key"
 
     dim_customer {
-        string customer_id PK
-        string customer_name
-        string email "restricted by Lake Formation"
-        string country
-        date   created_date
+        varchar customer_id PK "ZSTD"
+        varchar country "BYTEDICT"
     }
     dim_product {
-        string product_id PK
-        string product_name
-        string category
-        double price
+        varchar product_id PK "ZSTD"
+        varchar product_name "ZSTD"
+        varchar category "BYTEDICT"
+        decimal price "12,2"
     }
     dim_date {
-        int  date_key PK
-        int  year
-        int  month
-        int  day
-        bool is_weekend
+        date     date_key PK
+        smallint year
+        smallint month
+        smallint day
+        varchar  day_name
+        boolean  is_weekend
     }
     fact_orders {
-        string order_id PK
-        string customer_id FK
-        string product_id FK
-        int    date_key FK
-        int    quantity
-        double order_total "quantity x price"
-        string status
+        varchar   order_id PK "ZSTD"
+        varchar   customer_id FK "DISTKEY"
+        varchar   product_id FK "ZSTD"
+        timestamp order_date "SORTKEY"
+        integer   quantity
+        decimal   price "12,2"
+        decimal   order_total "quantity x price"
+        varchar   status "BYTEDICT"
     }
 ```
 
 **Distribution and sort.** `fact_orders` takes `DISTKEY(customer_id)` and
-`SORTKEY(date_key)`; `dim_customer` shares the same distribution key so the most
-common join is local rather than a broadcast. `dim_product` and `dim_date` are
-small enough for `DISTSTYLE ALL`, replicated to every node.
+`SORTKEY(order_date)`. All three dimensions are `DISTSTYLE ALL` - a thousand
+rows on every node costs almost nothing and takes them out of every join's
+shuffle, so only the fact is worth distributing.
+
+That makes the distribution key belt and braces today: with `dim_customer`
+replicated everywhere, the join is already node-local. The key is chosen for how
+the table is *queried* rather than for how it happens to load, and it is what
+would still be right if the customer dimension ever outgrew `ALL`.
+
+`SORTKEY(order_date)` is the one doing measurable work. Every analytical
+question here is bounded by time, and Redshift's zone maps skip blocks whose
+min/max cannot match a dated predicate - the same idea as Athena's partition
+pruning in Phase 5.
 
 The query this shape exists to answer:
 
