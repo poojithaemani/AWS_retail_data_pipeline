@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="architecture" name="Architecture">
-        <mxGraphModel dx="1407" dy="770" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="950" math="0" shadow="0">
+        <mxGraphModel dx="827" dy="865" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="950" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -100,20 +100,22 @@
                 <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;" parent="1" source="catalog" target="glueetl" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e8" value="PASS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#82B366;fontColor=#3C6B3C;" parent="1" source="glueetl" target="s3cur" edge="1">
-                    <mxGeometry relative="1" as="geometry">
+                <mxCell id="e8" value="PASS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#82B366;fontColor=#3C6B3C;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;verticalAlign=bottom;" parent="1" source="glueetl" target="s3cur" edge="1">
+                    <mxGeometry x="0.55" relative="1" as="geometry">
                         <Array as="points">
-                            <mxPoint x="373" y="459"/>
-                            <mxPoint x="613" y="459"/>
+                            <mxPoint x="373" y="450"/>
+                            <mxPoint x="613" y="450"/>
                         </Array>
+                        <mxPoint as="offset"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e9" value="FAIL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#B85450;fontColor=#B85450;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="glueetl" target="s3quar" edge="1">
-                    <mxGeometry relative="1" as="geometry">
+                <mxCell id="e9" value="FAIL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#B85450;fontColor=#B85450;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;verticalAlign=bottom;" parent="1" source="glueetl" target="s3quar" edge="1">
+                    <mxGeometry x="0.72" relative="1" as="geometry">
                         <Array as="points">
-                            <mxPoint x="373" y="459"/>
-                            <mxPoint x="853" y="459"/>
+                            <mxPoint x="373" y="470"/>
+                            <mxPoint x="853" y="470"/>
                         </Array>
+                        <mxPoint as="offset"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e11" value="COPY" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;" parent="1" source="s3cur" target="redshift" edge="1">
@@ -121,20 +123,29 @@
                         <mxPoint x="26" as="offset"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#999999;" parent="1" source="s3cur" target="athena" edge="1">
+                <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#999999;" parent="1" source="s3cur" target="athena" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e13" value="column-level grants" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#DD344C;fontColor=#DD344C;" parent="1" source="lf" target="catalog" edge="1">
-                    <mxGeometry x="-0.75" relative="1" as="geometry">
-                        <mxPoint y="-14" as="offset"/>
+                <mxCell id="e13" value="column-level grants" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#DD344C;fontColor=#DD344C;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="lf" target="catalog" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="100" y="785"/>
+                            <mxPoint x="100" y="331"/>
+                            <mxPoint x="520" y="331"/>
+                            <mxPoint x="520" y="261"/>
+                        </Array>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#E7157B;" parent="1" source="eb" target="sfn" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e15" value="orchestrates" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#E7157B;fontColor=#E7157B;" parent="1" source="sfn" target="glueetl" edge="1">
-                    <mxGeometry x="-0.6" relative="1" as="geometry">
-                        <mxPoint y="16" as="offset"/>
+                <mxCell id="e15" value="orchestrates" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#E7157B;fontColor=#E7157B;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="sfn" target="glueetl" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="683" y="440"/>
+                            <mxPoint x="430" y="440"/>
+                            <mxPoint x="430" y="389"/>
+                        </Array>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e16" value="monitors" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#E7157B;fontColor=#E7157B;" parent="1" source="cw" target="sfn" edge="1">
@@ -161,7 +172,7 @@
                 <mxCell id="e19" value="alarm" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#E7157B;fontColor=#E7157B;" parent="1" source="cw" target="sns" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e20" value="Spectrum" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;strokeColor=#8C4FFF;fontColor=#8C4FFF;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="catalog" target="redshift" edge="1">
+                <mxCell id="e20" value="Spectrum" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;strokeColor=#8C4FFF;fontColor=#8C4FFF;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="catalog" target="redshift" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="440" y="261"/>
@@ -176,7 +187,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="terraform-layers" name="Terraform Layers">
-        <mxGraphModel dx="1407" dy="770" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1150" pageHeight="800" math="0" shadow="0">
+        <mxGraphModel dx="620" dy="649" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1150" pageHeight="800" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
